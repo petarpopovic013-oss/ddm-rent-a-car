@@ -1,0 +1,13 @@
+import Link from "next/link";
+import { getReservations } from "@/lib/admin/data";
+import { formatDate, formatDateTime, formatRsd } from "@/lib/admin/format";
+import { MessageBanner, PageHeader, ReservationStatusBadge } from "../../components/ui";
+
+export default async function ReservationsPage({ searchParams }: { searchParams: Promise<{ status?: string; q?: string; success?: string; error?: string }> }) {
+  const filters = await searchParams;
+  const reservations = await getReservations({ status: filters.status, query: filters.q });
+  return <main className="admin-main"><PageHeader eyebrow="Upiti / operativa" title="Rezervacije" copy="Pretraga, odluke i kompletan pregled termina i kontakata." actionHref="/admin/rezervacije/nova" actionLabel="Nova rezervacija" /><MessageBanner success={filters.success} error={filters.error} />
+    <form className="admin-filters"><label><span>Pretraga</span><input name="q" defaultValue={filters.q} placeholder="Ime, email ili telefon" /></label><label><span>Status</span><select name="status" defaultValue={filters.status ?? ""}><option value="">Svi statusi</option><option value="pending">Novi upiti</option><option value="accepted">Prihvaćeno</option><option value="rejected">Odbijeno</option></select></label><button type="submit" className="admin-button">Primeni</button><Link href="/admin/rezervacije">Resetuj</Link></form>
+    <section className="admin-panel"><div className="admin-panel__header"><div><span>Rezultati</span><h2>{reservations.length} rezervacija</h2></div></div>{reservations.length ? <div className="admin-table-wrap"><table className="admin-table admin-table--reservations"><thead><tr><th>Klijent</th><th>Vozilo</th><th>Period</th><th>Iznos</th><th>Status</th><th /></tr></thead><tbody>{reservations.map((reservation) => <tr key={reservation.id}><td><strong>{reservation.customer_name}</strong><small>{reservation.customer_phone}<br />{formatDateTime(reservation.created_at)}</small></td><td>{reservation.rc_vehicles ? `${reservation.rc_vehicles.make} ${reservation.rc_vehicles.model}` : reservation.requested_vehicle ?? "—"}</td><td><strong>{formatDate(reservation.pickup_date)}</strong><small>do {formatDate(reservation.return_date)} · {reservation.rental_days} dana</small></td><td>{formatRsd(reservation.estimated_total_rsd)}</td><td><ReservationStatusBadge status={reservation.status} /></td><td><Link href={`/admin/rezervacije/${reservation.id}`}>Otvori ↗</Link></td></tr>)}</tbody></table></div> : <div className="admin-empty"><strong>Nema rezervacija za izabrane filtere.</strong><p>Promenite pretragu ili kreirajte novu rezervaciju.</p></div>}</section>
+  </main>;
+}

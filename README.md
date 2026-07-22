@@ -1,36 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DDM Rent a Car
 
-## Getting Started
+Next.js 16 aplikacija za DDM Rent a Car, sa javnim landing sajtom i zaštićenim admin panelom za vozila, cenovnike i rezervacije.
 
-First, run the development server:
+## Lokalno pokretanje
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+Kopirajte `.env.example` u `.env.local` i popunite vrednosti:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://obtjnbhzitkuvvlabjrb.supabase.co
+SUPABASE_SECRET_KEY=
+ADMIN_PASSWORD_HASH=
+ADMIN_SESSION_SECRET=
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Admin šifra se čuva samo kao bcrypt hash:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+node -e "console.log(require('bcryptjs').hashSync('unesite-svoju-sifru', 12))"
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Session secret generišite komandom:
 
-## Learn More
+```bash
+openssl rand -base64 32
+```
 
-To learn more about Next.js, take a look at the following resources:
+Zatim pokrenite:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm install
+npm run dev
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Javni sajt: `http://localhost:3000`
+- Admin prijava: `http://localhost:3000/admin/login`
 
-## Deploy on Vercel
+## Supabase objekti
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Rent-a-car deo baze koristi `rc_` namespace:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `rc_vehicles`
+- `rc_vehicle_pricing_tiers`
+- `rc_reservations`
+- Storage bucket `rc-vehicle-images`
+
+`SUPABASE_SECRET_KEY` je server-only vrednost i nikada ne sme imati `NEXT_PUBLIC_` prefiks niti biti commitovana.
+
+## Provere
+
+```bash
+npm run lint
+npx tsc --noEmit
+npm run build
+```

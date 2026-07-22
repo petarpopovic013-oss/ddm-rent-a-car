@@ -1,0 +1,177 @@
+.modal { position: fixed; z-index: 200; inset: 0; display: grid; place-items: center; padding: 24px; }
+.backdrop { position: absolute; inset: 0; width: 100%; border: 0; background: rgba(16,20,20,.72); cursor: pointer; backdrop-filter: blur(5px); }
+.panel { position: relative; display: grid; grid-template-columns: .66fr 1.34fr; width: min(1060px, 100%); height: min(720px, calc(100vh - 48px)); overflow: hidden; border: 1px solid var(--blue); background: var(--white); box-shadow: 0 28px 90px rgba(0,0,0,.28); animation: modal-in .22s ease-out; }
+.panel::before { content: ""; position: absolute; z-index: 4; top: 0; right: 0; width: 28%; height: 8px; background: var(--yellow); }
+.aside { display: flex; min-height: 0; flex-direction: column; background-color: var(--blue); background-image: linear-gradient(rgba(255,255,255,.07) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.07) 1px, transparent 1px); background-size: 54px 54px; color: rgba(255,255,255,.75); padding: clamp(30px, 4vw, 48px); }
+.aside > span { color: var(--yellow); font-size: 10px; font-weight: 750; letter-spacing: .13em; }
+.aside > strong { max-width: 330px; margin: 18px 0; color: var(--white); font-family: var(--font-display), Arial, sans-serif; font-size: clamp(2.8rem, 4vw, 4.2rem); font-weight: 800; letter-spacing: -.035em; line-height: .82; text-transform: uppercase; }
+.aside > p { margin-bottom: auto; font-size: 14px; }
+.aside > div { display: flex; align-items: center; gap: 13px; border-top: 1px solid rgba(255,255,255,.24); padding: 14px 0; color: var(--white); font-size: 12px; font-weight: 650; }
+.aside > div b { color: var(--yellow); font-size: 10px; }
+.content { position: relative; height: 100%; min-height: 0; overflow: hidden; padding: 32px 42px 22px; }
+.close { position: absolute; z-index: 5; top: 14px; right: 14px; display: grid; width: 39px; height: 39px; place-items: center; border: 1px solid var(--blue); background: var(--white); color: var(--blue); font-size: 25px; line-height: 1; cursor: pointer; }
+.close:hover { background: var(--yellow); }
+.content > h2, .success h2 { margin-bottom: 12px; font-size: clamp(3rem, 5vw, 4.8rem); line-height: .84; text-transform: uppercase; }
+.intro { max-width: 620px; margin-bottom: 15px; font-size: 13px; }
+.wizardForm { display: flex; height: 100%; min-height: 0; flex-direction: column; }
+.progress { display: grid; flex: 0 0 auto; grid-template-columns: repeat(4, 48px) auto; align-items: center; gap: 6px; margin-bottom: 15px; }
+.progress > span { height: 5px; border: 1px solid var(--blue); background: transparent; }
+.progress > .progressActive { background: var(--yellow); }
+.progress > b { margin-left: 7px; color: var(--blue); font-size: 9px; letter-spacing: .1em; }
+.step { display: flex; min-height: 0; flex: 1; flex-direction: column; }
+.step > :global(.eyebrow) { margin-bottom: 11px; }
+.step > h2 { margin-bottom: 9px; font-size: clamp(2.65rem, 4vw, 4rem); line-height: .84; text-transform: uppercase; outline: none; }
+.stepActions { position: relative; z-index: 3; display: flex; flex: 0 0 auto; align-items: center; justify-content: space-between; gap: 18px; margin-top: 12px; border-top: 1px solid var(--blue); background: var(--white); padding-top: 12px; }
+.stepActions > span { color: var(--muted); font-size: 10px; }
+.stepActions :global(.button) { min-width: 190px; }
+.stepActions :global(.button):disabled { cursor: not-allowed; opacity: .42; }
+.backButton { border: 0; background: transparent; color: var(--blue); padding: 10px 0; font-size: 12px; font-weight: 750; cursor: pointer; }
+.backButton:hover { text-decoration: underline; text-underline-offset: 4px; }
+.aside .asideStepActive { border-left: 6px solid var(--yellow); background: rgba(255,255,255,.1); padding-left: 13px; }
+.aside .asideStepDone b::after { content: " ✓"; }
+.vehicleOptions { display: grid; min-height: 0; flex: 1; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow-y: auto; border-top: 1px solid var(--blue); border-left: 1px solid var(--blue); }
+.vehicleOptions > button { display: grid; grid-template-columns: auto 1fr; min-height: 72px; align-content: center; gap: 2px 11px; border: 0; border-right: 1px solid var(--blue); border-bottom: 1px solid var(--blue); background: var(--white); padding: 12px 14px; color: var(--ink); text-align: left; cursor: pointer; }
+.vehicleOptions > button:hover { background: #f6f7fc; }
+.vehicleOptions > button > span { grid-row: 1 / 3; color: var(--blue); font-size: 9px; font-weight: 800; }
+.vehicleOptions > button > strong { font-family: var(--font-display), Arial, sans-serif; font-size: 17px; line-height: 1.1; text-transform: uppercase; }
+.vehicleOptions > button > b { color: var(--blue); font-size: 9px; text-transform: uppercase; }
+.vehicleOptions > .vehicleOptionActive { background: var(--blue); color: var(--white); }
+.vehicleOptions > .vehicleOptionActive:hover { background: var(--blue); }
+.vehicleOptions > .vehicleOptionActive span, .vehicleOptions > .vehicleOptionActive b { color: var(--yellow); }
+.summary { display: grid; flex: 0 0 auto; grid-template-columns: 1.2fr 1fr 1fr; margin: 10px 0 13px; border-top: 1px solid var(--blue); border-left: 1px solid var(--blue); background: #f7f8fc; }
+.summary > div { min-height: 60px; border-right: 1px solid var(--blue); border-bottom: 1px solid var(--blue); padding: 10px 12px; }
+.summary span { display: block; margin-bottom: 7px; color: var(--blue); font-size: 8px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
+.summary strong { color: var(--ink); font-size: 11px; line-height: 1.25; }
+.form { display: grid; min-height: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px 15px; overflow-y: auto; padding-right: 3px; }
+.form label { display: grid; align-content: start; gap: 6px; }
+.form label > span:first-child { color: var(--blue); font-size: 9px; font-weight: 750; letter-spacing: .09em; text-transform: uppercase; }
+.form input, .form select, .form textarea { width: 100%; min-height: 43px; border: 1px solid var(--line); border-radius: 0; background: var(--white); padding: 9px 11px; color: var(--ink); font: inherit; font-size: 13px; }
+.form textarea { resize: vertical; line-height: 1.45; }
+.form input:focus, .form select:focus, .form textarea:focus { border-color: var(--blue); outline: 2px solid rgba(41,59,145,.12); }
+.wide { grid-column: 1 / -1; }
+.form .consent { display: flex; min-height: 45px; align-items: flex-start; flex-direction: row; gap: 10px; border-top: 1px solid var(--line); padding-top: 14px; }
+.form .consent input { width: 17px; min-height: 17px; flex: 0 0 auto; margin-top: 2px; accent-color: var(--blue); }
+.form .consent span { color: var(--muted); font-size: 10px; font-weight: 450; letter-spacing: 0; line-height: 1.5; text-transform: none; }
+.confirmationGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-top: 1px solid var(--blue); border-left: 1px solid var(--blue); background: #f7f8fc; }
+.confirmationGrid > div { min-height: 72px; border-right: 1px solid var(--blue); border-bottom: 1px solid var(--blue); padding: 12px 14px; }
+.confirmationGrid span, .priceConfirmation span, .confirmationNote span { display: block; margin-bottom: 7px; color: var(--blue); font-size: 8px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
+.confirmationGrid strong { display: block; color: var(--ink); font-size: 12px; line-height: 1.35; }
+.confirmationGrid small { display: block; margin-top: 4px; color: var(--muted); font-size: 9px; font-weight: 500; overflow-wrap: anywhere; }
+.priceConfirmation { display: grid; grid-template-columns: minmax(0, 1fr) auto; margin-top: 13px; border: 1px solid var(--blue); }
+.priceConfirmation > div { min-width: 0; padding: 13px 15px; }
+.priceConfirmation > div:last-child { min-width: 180px; border-left: 1px solid var(--blue); background: var(--yellow); }
+.priceConfirmation p { margin: 0; font-size: 12px; line-height: 1.4; }
+.priceConfirmation strong { display: block; color: var(--blue); font-family: var(--font-display), Arial, sans-serif; font-size: 25px; line-height: 1; white-space: nowrap; }
+.confirmationNote { max-height: 72px; margin-top: 10px; overflow-y: auto; border-left: 4px solid var(--yellow); background: #f7f8fc; padding: 9px 12px; }
+.confirmationNote p { margin: 0; font-size: 11px; line-height: 1.4; white-space: pre-wrap; }
+.error { margin: 0; border-left: 4px solid #b52e3a; background: #fff0f1; padding: 11px 13px; color: #8f202a; font-size: 12px; }
+.success { display: flex; min-height: 560px; flex-direction: column; justify-content: center; }
+.success > span { width: fit-content; margin-bottom: 24px; background: var(--yellow); color: var(--blue); padding: 7px 10px; font-size: 9px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.success p { max-width: 540px; margin: 10px 0 29px; font-size: 16px; }
+.success :global(.button) { width: fit-content; }
+
+.calendar { min-height: 0; flex: 1; overflow-y: auto; border: 1px solid var(--blue); background: var(--white); }
+.calendarStatus { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--blue); }
+.calendarStatus > div { min-height: 62px; border-right: 1px solid var(--blue); padding: 11px 15px; }
+.calendarStatus > div:last-child { border-right: 0; }
+.calendarStatus span { display: block; margin-bottom: 4px; color: var(--blue); font-size: 8px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
+.calendarStatus strong { color: var(--ink); font-size: 12px; }
+.calendarStatus > .calendarStatusActive { background: #fffedb; box-shadow: inset 0 -5px 0 var(--yellow); }
+.calendarStatus > .calendarStatusDone { background: var(--blue); }
+.calendarStatus > .calendarStatusDone span { color: var(--yellow); }
+.calendarStatus > .calendarStatusDone strong { color: var(--white); }
+.calendarHeader { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; border-bottom: 1px solid var(--line); }
+.calendarHeader > strong { color: var(--ink); font-family: var(--font-display), Arial, sans-serif; font-size: 20px; text-align: center; text-transform: uppercase; }
+.calendarHeader button { height: 44px; border: 0; background: transparent; color: var(--blue); font-size: 18px; cursor: pointer; }
+.calendarHeader button:first-child { border-right: 1px solid var(--line); }
+.calendarHeader button:last-child { border-left: 1px solid var(--line); }
+.calendarHeader button:hover:not(:disabled) { background: var(--yellow); }
+.calendarHeader button:disabled { cursor: not-allowed; opacity: .25; }
+.calendarWeekdays, .calendarGrid { display: grid; grid-template-columns: repeat(7, 1fr); }
+.calendarWeekdays { border-bottom: 1px solid var(--line); background: #f7f8fc; }
+.calendarWeekdays span { padding: 7px 2px; color: var(--blue); font-size: 8px; font-weight: 800; text-align: center; text-transform: uppercase; }
+.calendarGrid > button, .calendarEmpty { min-height: 36px; border: 0; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--white); }
+.calendarGrid > :nth-child(7n) { border-right: 0; }
+.calendarGrid > button { position: relative; display: grid; place-items: center; color: var(--ink); font-size: 11px; cursor: pointer; }
+.calendarGrid > button:hover:not(:disabled) { z-index: 1; outline: 2px solid var(--blue); outline-offset: -2px; }
+.calendarGrid > button:disabled { background: #f7f7f7; color: #b5b5b5; cursor: not-allowed; text-decoration: line-through; }
+.calendarGrid > .calendarInRange { background: #fffedb; color: var(--blue); }
+.calendarGrid > .calendarSelected { background: var(--blue); color: var(--white); font-weight: 800; }
+.calendarGrid > .calendarSelected::after { content: ""; position: absolute; right: 5px; bottom: 5px; width: 5px; height: 5px; background: var(--yellow); }
+.calendarFooter { display: flex; min-height: 47px; align-items: center; justify-content: space-between; gap: 16px; padding: 8px 13px; }
+.calendarFooter p { margin: 0; font-size: 9px; line-height: 1.35; }
+.calendarFooter button { flex: 0 0 auto; border: 0; background: transparent; color: var(--blue); font-size: 9px; font-weight: 750; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+
+@keyframes modal-in { from { opacity: 0; transform: translateY(15px) scale(.985); } to { opacity: 1; transform: none; } }
+
+@media (max-width: 1100px) {
+  .panel { grid-template-columns: .62fr 1.38fr; }
+  .aside { padding: 42px 32px; }
+}
+
+@media (max-width: 820px) {
+  .modal { padding: 14px; }
+  .panel { display: block; height: calc(100vh - 28px); max-height: calc(100vh - 28px); }
+  .aside { display: none; }
+  .content { height: 100%; overflow: hidden; padding: 42px 24px 16px; }
+  .wizardForm { min-height: auto; }
+}
+
+@media (max-width: 620px) {
+  .modal { padding: 0; }
+  .panel { width: 100%; height: 100dvh; min-height: 0; max-height: 100dvh; border: 0; }
+  .content { height: 100%; min-height: 0; padding: calc(53px + env(safe-area-inset-top)) 14px calc(10px + env(safe-area-inset-bottom)); }
+  .close { top: max(12px, env(safe-area-inset-top)); right: 12px; width: 44px; height: 44px; }
+  .content > h2, .success h2 { font-size: 3.2rem; }
+  .step > h2 { font-size: clamp(2.15rem, 11vw, 2.55rem); }
+  .progress { grid-template-columns: repeat(4, minmax(25px, 34px)) auto; }
+  .vehicleOptions { grid-template-columns: 1fr; }
+  .vehicleOptions > button { min-height: 64px; }
+  .summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .summary > div { min-width: 0; min-height: 65px; padding: 9px 8px; overflow-wrap: anywhere; }
+  .summary strong { font-size: 10px; }
+  .form { grid-template-columns: 1fr; }
+  .form input, .form select, .form textarea { font-size: 16px; }
+  .wide { grid-column: auto; }
+  .confirmationGrid { min-height: 0; grid-template-columns: 1fr; overflow-y: auto; }
+  .confirmationGrid > div { min-height: 54px; padding: 9px 11px; }
+  .priceConfirmation { grid-template-columns: 1fr; }
+  .priceConfirmation > div { padding: 10px 12px; }
+  .priceConfirmation > div:last-child { min-width: 0; border-top: 1px solid var(--blue); border-left: 0; }
+  .priceConfirmation strong { font-size: 22px; }
+  .calendarHeader button { min-height: 46px; }
+  .calendarGrid > button, .calendarEmpty { min-height: 38px; }
+  .calendarFooter button { min-height: 38px; }
+  .calendarFooter { align-items: flex-start; flex-direction: column; }
+  .stepActions { align-items: stretch; flex-direction: column-reverse; }
+  .stepActions :global(.button) { width: 100%; }
+  .backButton { text-align: center; }
+}
+
+@media (max-width: 360px) {
+  .content { padding-inline: 10px; }
+  .step > :global(.eyebrow) { margin-bottom: 7px; }
+  .intro { margin-bottom: 10px; }
+  .progress { grid-template-columns: repeat(4, minmax(20px, 1fr)) auto; margin-bottom: 10px; }
+  .summary { grid-template-columns: 1fr; max-height: 150px; overflow-y: auto; }
+  .summary > div { min-height: 48px; }
+  .calendarStatus > div { min-height: 56px; padding: 9px; }
+  .calendarHeader > strong { font-size: 17px; }
+  .calendarGrid > button, .calendarEmpty { min-height: 34px; }
+}
+
+@media (max-height: 700px) and (max-width: 620px) {
+  .content { padding-top: calc(49px + env(safe-area-inset-top)); }
+  .progress { margin-bottom: 8px; }
+  .step > :global(.eyebrow) { display: none; }
+  .step > h2 { font-size: 2rem; }
+  .intro { margin-bottom: 8px; }
+  .vehicleOptions > button { min-height: 56px; }
+  .calendarStatus > div { min-height: 52px; padding-block: 7px; }
+  .calendarGrid > button, .calendarEmpty { min-height: 31px; }
+  .stepActions { margin-top: 8px; padding-top: 8px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel { animation-duration: .01ms; }
+}
