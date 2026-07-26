@@ -44,8 +44,8 @@ const vehicleSchema = z.object({
   sort_order: z.coerce.number().int().min(0).max(9999),
   price_1_3: z.coerce.number().int().positive(),
   price_4_10: z.coerce.number().int().positive(),
-  price_11_29: z.coerce.number().int().positive(),
-  price_30: z.coerce.number().int().positive(),
+  price_11_25: z.coerce.number().int().positive(),
+  price_26_31: optionalInteger(1, 999_999_999),
 });
 
 const reservationSchema = z.object({
@@ -110,8 +110,8 @@ function parseVehicle(formData: FormData) {
     sort_order: value(formData, "sort_order"),
     price_1_3: value(formData, "price_1_3"),
     price_4_10: value(formData, "price_4_10"),
-    price_11_29: value(formData, "price_11_29"),
-    price_30: value(formData, "price_30"),
+    price_11_25: value(formData, "price_11_25"),
+    price_26_31: value(formData, "price_26_31"),
   });
 }
 
@@ -197,13 +197,29 @@ async function uploadVehicleImage(vehicleId: string, file: File) {
   }
 
   const path = `${vehicleId}/${crypto.randomUUID()}.webp`;
-  const { error } = await getSupabaseAdmin().storage
-    .from(VEHICLE_IMAGE_BUCKET)
-    .upload(path, optimized, {
+  const storage = getSupabaseAdmin().storage.from(VEHICLE_IMAGE_BUCKET);
+  const uploadBody = new Blob([new Uint8Array(optimized)], { type: "image/webp" });
+  const { error } = await storage
+    .upload(path, uploadBody, {
       contentType: "image/webp",
       upsert: false,
     });
   if (error) throw new Error(error.message);
+
+  try {
+    const uploaded = await storage.download(path);
+    if (uploaded.error) throw uploaded.error;
+    const metadata = await sharp(
+      new Uint8Array(await uploaded.data.arrayBuffer()),
+    ).metadata();
+    if (metadata.format !== "webp" || !metadata.width || !metadata.height) {
+      throw new Error("Uploadovana datoteka nije ispravan WebP.");
+    }
+  } catch {
+    await storage.remove([path]);
+    throw new Error("Slika nije pravilno sačuvana. Pokušajte ponovo.");
+  }
+
   return path;
 }
 
@@ -251,8 +267,10 @@ function pricingRecords(vehicleId: string, data: z.infer<typeof vehicleSchema>) 
   return [
     { vehicle_id: vehicleId, min_days: 1, max_days: 3, price_rsd: data.price_1_3, pricing_mode: "daily" },
     { vehicle_id: vehicleId, min_days: 4, max_days: 10, price_rsd: data.price_4_10, pricing_mode: "daily" },
-    { vehicle_id: vehicleId, min_days: 11, max_days: 29, price_rsd: data.price_11_29, pricing_mode: "daily" },
-    { vehicle_id: vehicleId, min_days: 30, max_days: 30, price_rsd: data.price_30, pricing_mode: "fixed" },
+    { vehicle_id: vehicleId, min_days: 11, max_days: 25, price_rsd: data.price_11_25, pricing_mode: "daily" },
+    ...(data.price_26_31 == null
+      ? []
+      : [{ vehicle_id: vehicleId, min_days: 30, max_days: 30, price_rsd: data.price_26_31, pricing_mode: "fixed" }]),
   ];
 }
 
@@ -361,6 +379,15 @@ export async function updateVehicleAction(id: string, formData: FormData) {
       .from("rc_vehicle_pricing_tiers")
       .upsert(pricingRecords(id, data), { onConflict: "vehicle_id,min_days" });
     if (prices.error) throw new Error(prices.error.message);
+
+    if (data.price_26_31 == null) {
+      const removedMonthlyPrice = await supabase
+        .from("rc_vehicle_pricing_tiers")
+        .delete()
+        .eq("vehicle_id", id)
+        .eq("pricing_mode", "fixed");
+      if (removedMonthlyPrice.error) throw new Error(removedMonthlyPrice.error.message);
+    }
 
     if (newGalleryPaths.length) {
       const highestSortOrder = (current.rc_vehicle_images ?? []).reduce(

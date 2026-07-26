@@ -10,6 +10,9 @@ type InquiryState = {
   message: string;
 };
 
+const MONTHLY_RENTAL_MIN_DAYS = 26;
+const MAX_RENTAL_DAYS = 31;
+
 const inquirySchema = z.object({
   vehicle_slug: z.string().trim().min(1).max(100),
   customer_name: z.string().trim().min(2).max(120),
@@ -58,8 +61,11 @@ export async function submitInquiryAction(
   if (data.pickup_date < today) {
     return { status: "error", message: "Datum preuzimanja ne može biti u prošlosti." };
   }
-  if (!Number.isInteger(rentalDays) || rentalDays < 1 || rentalDays > 30) {
-    return { status: "error", message: "Period najma mora biti između 1 i 30 dana." };
+  if (!Number.isInteger(rentalDays) || rentalDays < 1 || rentalDays > MAX_RENTAL_DAYS) {
+    return {
+      status: "error",
+      message: "Vozilo je moguće rezervisati najduže 31 dan.",
+    };
   }
 
   try {
@@ -98,6 +104,12 @@ export async function submitInquiryAction(
         priceRsd = tier.price_rsd;
         pricingMode = tier.pricing_mode;
       } catch {
+        if (rentalDays >= MONTHLY_RENTAL_MIN_DAYS) {
+          return {
+            status: "error",
+            message: "Za izabrano vozilo nije dostupna fiksna mesečna cena. Izaberite period do 25 dana.",
+          };
+        }
         priceRsd = null;
         pricingMode = null;
       }

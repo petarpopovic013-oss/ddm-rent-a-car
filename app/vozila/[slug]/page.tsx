@@ -18,8 +18,8 @@ function price(value: number) {
 function tierLabel(minDays: number) {
   if (minDays === 1) return "1-3 dana";
   if (minDays === 4) return "4-10 dana";
-  if (minDays === 11) return "11-29 dana";
-  return "30 dana";
+  if (minDays === 11) return "11–25 dana";
+  return "26–31 dan";
 }
 
 export async function generateStaticParams() {

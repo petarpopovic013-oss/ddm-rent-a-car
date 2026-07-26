@@ -30,11 +30,13 @@ export function formatInquiryDate(value: string) {
 export default function DateRangeCalendar({
   pickupDate,
   returnDate,
+  maxRentalDays,
   unavailablePeriods,
   onChange,
 }: {
   pickupDate: string;
   returnDate: string;
+  maxRentalDays: 25 | 31;
   unavailablePeriods: { pickupDate: string; returnDate: string }[];
   onChange: (pickupDate: string, returnDate: string) => void;
 }) {
@@ -75,7 +77,7 @@ export default function DateRangeCalendar({
     }
     if (
       value >= pickupDate
-      && differenceInDays(pickupDate, value) <= 29
+      && differenceInDays(pickupDate, value) <= maxRentalDays - 1
       && !rangeContainsUnavailableDate(pickupDate, value)
     ) {
       onChange(pickupDate, value);
@@ -117,7 +119,8 @@ export default function DateRangeCalendar({
           const value = isoDate(date);
           const beforeToday = value < todayIso;
           const beforePickup = choosingReturn && value < pickupDate;
-          const beyondRange = choosingReturn && differenceInDays(pickupDate, value) > 29;
+          const beyondRange = choosingReturn
+            && differenceInDays(pickupDate, value) > maxRentalDays - 1;
           const unavailable = isUnavailable(value);
           const crossesUnavailable = choosingReturn
             && value >= pickupDate
@@ -145,7 +148,7 @@ export default function DateRangeCalendar({
         })}
       </div>
       <div className={styles.calendarFooter}>
-        <p>{choosingReturn ? "Izaberite datum vraćanja. Zauzeti termini i rasponi koji ih prelaze nisu dostupni." : returnDate ? "Termin je izabran. Možete nastaviti ili promeniti raspon." : "Prvo izaberite datum preuzimanja. Precrtani datumi su zauzeti."}</p>
+        <p>{choosingReturn ? `Izaberite datum vraćanja. Ovo vozilo može se rezervisati najviše ${maxRentalDays} dana, računajući i dan preuzimanja.` : returnDate ? "Termin je izabran. Možete nastaviti ili promeniti raspon." : "Prvo izaberite datum preuzimanja. Precrtani datumi su zauzeti."}</p>
         {pickupDate && <button type="button" onClick={() => onChange("", "")}>Promeni termin</button>}
       </div>
     </div>

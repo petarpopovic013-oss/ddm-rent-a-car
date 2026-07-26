@@ -48,12 +48,12 @@ export default function VehicleForm({
       </section>
 
       <section className="admin-form-section">
-        <div className="admin-form-section__intro"><span>03</span><div><h2>Cenovnik</h2><p>Dnevne cene i fiksna cena za kompletnih 30 dana.</p></div></div>
+        <div className="admin-form-section__intro"><span>03</span><div><h2>Cenovnik</h2><p>Dnevne cene do 25 dana i opciona fiksna mesečna cena za 26–31 dan.</p></div></div>
         <div className="admin-pricing-grid">
           <label><span>1–3 dana</span><div><input name="price_1_3" type="number" min="1" defaultValue={tierPrice(vehicle?.rc_vehicle_pricing_tiers, 1)} required /><b>RSD / dan</b></div></label>
           <label><span>4–10 dana</span><div><input name="price_4_10" type="number" min="1" defaultValue={tierPrice(vehicle?.rc_vehicle_pricing_tiers, 4)} required /><b>RSD / dan</b></div></label>
-          <label><span>11–29 dana</span><div><input name="price_11_29" type="number" min="1" defaultValue={tierPrice(vehicle?.rc_vehicle_pricing_tiers, 11)} required /><b>RSD / dan</b></div></label>
-          <label className="admin-pricing-grid__monthly"><span>30 dana</span><div><input name="price_30" type="number" min="1" defaultValue={tierPrice(vehicle?.rc_vehicle_pricing_tiers, 30)} required /><b>RSD fiksno</b></div></label>
+          <label><span>11–25 dana</span><div><input name="price_11_25" type="number" min="1" defaultValue={tierPrice(vehicle?.rc_vehicle_pricing_tiers, 11)} required /><b>RSD / dan</b></div></label>
+          <label className="admin-pricing-grid__monthly"><span>26–31 dan · opciono</span><div><input name="price_26_31" type="number" min="1" defaultValue={tierPrice(vehicle?.rc_vehicle_pricing_tiers, 30)} placeholder="Nema mesečnog najma" /><b>RSD fiksno · prazno znači najviše 25 dana</b></div></label>
         </div>
       </section>
 
@@ -61,9 +61,33 @@ export default function VehicleForm({
         <div className="admin-form-section__intro"><span>04</span><div><h2>Slika i objava</h2><p>Vizuelni prikaz, redosled i status na sajtu.</p></div></div>
         <div className="admin-media-grid">
           <div className="admin-image-field">
-            {imageUrl ? <div className="admin-image-preview"><Image src={imageUrl} alt={`${vehicle?.make} ${vehicle?.model}`} fill sizes="420px" /></div> : <div className="admin-image-placeholder">DDM / fotografija vozila</div>}
-            <label><span>{vehicle ? "Zameni fotografiju" : "Glavna fotografija *"}</span><input name="image" type="file" accept="image/jpeg,image/png,image/webp" required={!vehicle} /></label>
-            <p className="admin-image-hint">Slika se automatski smanjuje i pretvara u WebP.</p>
+            {imageUrl ? (
+              <div className="admin-image-preview">
+                <Image
+                  src={imageUrl}
+                  alt={`${vehicle?.make} ${vehicle?.model}`}
+                  fill
+                  sizes="(max-width: 800px) 100vw, 620px"
+                  unoptimized
+                />
+                <span>Glavna fotografija</span>
+              </div>
+            ) : (
+              <div className="admin-image-placeholder">DDM / fotografija vozila</div>
+            )}
+            <label>
+              <span>{imageUrl ? "Zameni fotografiju" : "Glavna fotografija *"}</span>
+              <input
+                name="image"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                required={!imageUrl}
+              />
+            </label>
+            <p className="admin-image-hint">
+              Slika se prikazuje cela, a pri čuvanju se automatski smanjuje,
+              pretvara u WebP i proverava.
+            </p>
           </div>
           <div className="admin-form-grid">
             <label><span>Status *</span><select name="status" defaultValue={vehicle?.status ?? "hidden"}><option value="hidden">Sakriveno</option><option value="active">Aktivno</option><option value="service">Servis</option><option value="archived">Arhivirano</option></select></label>
@@ -78,16 +102,40 @@ export default function VehicleForm({
           </label>
           <p>Možete izabrati više slika odjednom. Do 20 fotografija po čuvanju, ukupno najviše 50 MB pre kompresije.</p>
           {gallery.length > 0 && (
-            <div className="admin-gallery-grid">
-              {gallery.map((galleryImage, index) => {
-                const url = vehicleImageUrl(galleryImage.storage_path);
-                return (
-                  <label className="admin-gallery-item" key={galleryImage.id}>
-                    {url && <Image src={url} alt={`${vehicle?.make} ${vehicle?.model} — ${index + 2}`} fill sizes="180px" />}
-                    <span><input type="checkbox" name="remove_gallery_image" value={galleryImage.id} /> Ukloni</span>
-                  </label>
-                );
-              })}
+            <div className="admin-gallery-existing">
+              <div className="admin-gallery-existing__header">
+                <strong>Postojeće fotografije ({gallery.length})</strong>
+                <span>Označene fotografije brišu se kada sačuvate izmene.</span>
+              </div>
+              <div className="admin-gallery-grid">
+                {gallery.map((galleryImage, index) => {
+                  const url = vehicleImageUrl(galleryImage.storage_path);
+                  return (
+                    <label className="admin-gallery-item" key={galleryImage.id}>
+                      <span className="admin-gallery-item__image">
+                        {url && (
+                          <Image
+                            src={url}
+                            alt={`${vehicle?.make} ${vehicle?.model} — ${index + 2}`}
+                            fill
+                            sizes="(max-width: 540px) 100vw, (max-width: 1100px) 33vw, 260px"
+                            unoptimized
+                          />
+                        )}
+                        <b>Fotografija {index + 2}</b>
+                      </span>
+                      <span className="admin-gallery-item__remove">
+                        <input
+                          type="checkbox"
+                          name="remove_gallery_image"
+                          value={galleryImage.id}
+                        />
+                        <strong>Ukloni fotografiju</strong>
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>

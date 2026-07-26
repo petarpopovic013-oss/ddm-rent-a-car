@@ -21,6 +21,9 @@ export type InquiryVehicle = {
 };
 
 const initialState = { status: "idle" as const, message: "" };
+const DAILY_RENTAL_MAX_DAYS = 25;
+const MONTHLY_RENTAL_MIN_DAYS = 26;
+const MAX_RENTAL_DAYS = 31;
 
 function InquiryDialog({
   vehicles,
@@ -46,14 +49,30 @@ function InquiryDialog({
   const vehicleOptions = [...vehicles, { slug: "other", label: "Drugo / potrebna preporuka", pricing: [], unavailablePeriods: [] }];
   const selectedVehicle = vehicleOptions.find((option) => option.slug === vehicle);
   const selectedVehicleLabel = selectedVehicle?.label;
+  const hasMonthlyPrice = selectedVehicle?.pricing.some(
+    (tier) => tier.pricingMode === "fixed",
+  ) ?? false;
+  const maxRentalDays: 25 | 31 = vehicle === "other" || hasMonthlyPrice
+    ? MAX_RENTAL_DAYS
+    : DAILY_RENTAL_MAX_DAYS;
   const start = pickupDate ? new Date(`${pickupDate}T12:00:00Z`) : null;
   const end = returnDate ? new Date(`${returnDate}T12:00:00Z`) : null;
   const rentalDays = start && end
     ? Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1
     : 0;
-  const selectedTier = selectedVehicle?.pricing.find(
-    (tier) => rentalDays >= tier.minDays && (tier.maxDays == null || rentalDays <= tier.maxDays),
-  );
+  const selectedTier = selectedVehicle?.pricing.find((tier) => {
+    if (
+      rentalDays >= MONTHLY_RENTAL_MIN_DAYS
+      && rentalDays <= MAX_RENTAL_DAYS
+    ) {
+      return tier.pricingMode === "fixed";
+    }
+    return rentalDays > 0
+      && rentalDays <= DAILY_RENTAL_MAX_DAYS
+      && tier.pricingMode === "daily"
+      && rentalDays >= tier.minDays
+      && (tier.maxDays == null || rentalDays <= tier.maxDays);
+  });
   const estimatedTotal = selectedTier
     ? selectedTier.pricingMode === "fixed"
       ? selectedTier.priceRsd
@@ -133,7 +152,11 @@ function InquiryDialog({
                         className={vehicle === option.slug ? styles.vehicleOptionActive : ""}
                         type="button"
                         key={option.slug}
-                        onClick={() => setVehicle(option.slug)}
+                        onClick={() => {
+                          setVehicle(option.slug);
+                          setPickupDate("");
+                          setReturnDate("");
+                        }}
                         aria-pressed={vehicle === option.slug}
                       >
                         <span>{String(index + 1).padStart(2, "0")}</span>
@@ -153,10 +176,15 @@ function InquiryDialog({
                 <section className={styles.step}>
                   <p className="eyebrow">Korak 02 · Termin</p>
                   <h2 id="inquiry-title" ref={stepHeadingRef} tabIndex={-1}>Kada vam treba vozilo?</h2>
-                  <p className={styles.intro}>Izaberite preuzimanje, a zatim vraćanje. Najam može trajati najviše 30 dana.</p>
+                  <p className={styles.intro}>
+                    {hasMonthlyPrice || vehicle === "other"
+                      ? "Najam može trajati najviše 31 dan. Do 25 dana cena se obračunava po danu, a od 26 do 31 dana važi fiksna mesečna cena."
+                      : "Za ovo vozilo nije dostupna mesečna cena, pa najam može trajati najviše 25 dana."}
+                  </p>
                   <DateRangeCalendar
                     pickupDate={pickupDate}
                     returnDate={returnDate}
+                    maxRentalDays={maxRentalDays}
                     unavailablePeriods={selectedVehicle?.unavailablePeriods ?? []}
                     onChange={(pickup, returning) => { setPickupDate(pickup); setReturnDate(returning); }}
                   />
@@ -209,7 +237,7 @@ function InquiryDialog({
                     <div>
                       <span>Obračun cene</span>
                       {selectedTier ? (
-                        <p>{selectedTier.pricingMode === "fixed" ? "Fiksna cena za 30 dana" : `${rentalDays} dana × ${formatRsd(selectedTier.priceRsd)}`}</p>
+                        <p>{selectedTier.pricingMode === "fixed" ? `Fiksna mesečna cena za ${rentalDays} dana` : `${rentalDays} dana × ${formatRsd(selectedTier.priceRsd)}`}</p>
                       ) : (
                         <p>Cenu potvrđuje DDM tim nakon provere vozila.</p>
                       )}

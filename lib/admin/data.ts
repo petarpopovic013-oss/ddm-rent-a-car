@@ -153,21 +153,32 @@ export async function getReservation(id: string) {
 }
 
 export async function getPricingForPeriod(vehicleId: string, pickupDate: string, returnDate: string) {
+  const monthlyRentalMinDays = 26;
+  const maxRentalDays = 31;
   const start = new Date(`${pickupDate}T12:00:00Z`);
   const end = new Date(`${returnDate}T12:00:00Z`);
   const days = Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1;
-  if (!Number.isInteger(days) || days < 1 || days > 30) {
-    throw new Error("Period najma mora biti između 1 i 30 dana.");
+  if (!Number.isInteger(days) || days < 1 || days > maxRentalDays) {
+    throw new Error("Period najma mora biti između 1 i 31 dana.");
   }
 
-  const response = await getSupabaseAdmin()
+  let request = getSupabaseAdmin()
     .from("rc_vehicle_pricing_tiers")
     .select("*")
     .eq("vehicle_id", vehicleId)
-    .lte("min_days", days)
-    .or(`max_days.gte.${days},max_days.is.null`)
-    .limit(1)
-    .maybeSingle();
+    .limit(1);
+
+  if (days >= monthlyRentalMinDays) {
+    request = request
+      .eq("pricing_mode", "fixed");
+  } else {
+    request = request
+      .eq("pricing_mode", "daily")
+      .lte("min_days", days)
+      .or(`max_days.gte.${days},max_days.is.null`);
+  }
+
+  const response = await request.maybeSingle();
   const tier = unwrap(response.data as PricingTier | null, response.error, null as PricingTier | null);
   if (!tier) throw new Error("Vozilo nema cenu za izabrani period.");
   return { tier, days };
