@@ -1,9 +1,16 @@
+"use client";
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { PricingTier, Vehicle } from "@/lib/admin/types";
 import { bodyTypeLabels } from "@/lib/admin/types";
-import { vehicleImageUrl } from "@/lib/admin/data";
 import { SubmitButton } from "./form-controls";
+
+function vehicleImageUrl(path: string | null | undefined) {
+  if (!path) return null;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  return `${url}/storage/v1/object/public/vehicle-images/${path}`;
+}
 
 function tierPrice(tiers: PricingTier[] | undefined, minDays: number) {
   return tiers?.find((tier) => tier.min_days === minDays)?.price_rsd ?? "";
@@ -16,6 +23,7 @@ export default function VehicleForm({
   action: (formData: FormData) => void | Promise<void>;
   vehicle?: Vehicle | null;
 }) {
+  const [vehicleType, setVehicleType] = useState<"car" | "motorcycle">(vehicle?.type ?? "car");
   const imageUrl = vehicleImageUrl(vehicle?.primary_image_path);
   const gallery = [...(vehicle?.rc_vehicle_images ?? [])].sort(
     (a, b) => a.sort_order - b.sort_order,
@@ -25,11 +33,23 @@ export default function VehicleForm({
       <section className="admin-form-section">
         <div className="admin-form-section__intro"><span>01</span><div><h2>Osnovni podaci</h2><p>Identitet vozila i javni opis ponude.</p></div></div>
         <div className="admin-form-grid">
+          <div className="admin-field--full" style={{ display: "flex", gap: "24px", paddingBottom: "16px" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontWeight: "bold" }}>
+              <input type="radio" name="type" value="car" checked={vehicleType === "car"} onChange={() => setVehicleType("car")} />
+              Automobil
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontWeight: "bold" }}>
+              <input type="radio" name="type" value="motorcycle" checked={vehicleType === "motorcycle"} onChange={() => setVehicleType("motorcycle")} />
+              Motor
+            </label>
+          </div>
           <label><span>Marka *</span><input name="make" defaultValue={vehicle?.make} required maxLength={80} placeholder="Volkswagen" /></label>
           <label><span>Model *</span><input name="model" defaultValue={vehicle?.model} required maxLength={80} placeholder="Golf 7" /></label>
           <label><span>Godište</span><input name="year" type="number" min="1990" max="2100" defaultValue={vehicle?.year ?? ""} placeholder="2018" /></label>
           <label><span>Kategorija *</span><input name="category" defaultValue={vehicle?.category} required placeholder="Kompaktna klasa" /></label>
-          <label><span>Tip karoserije *</span><select name="body_type" defaultValue={vehicle?.body_type ?? "hatchback"}>{Object.entries(bodyTypeLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
+          {vehicleType === "car" && (
+            <label><span>Tip karoserije *</span><select name="body_type" defaultValue={vehicle?.body_type ?? "hatchback"}>{Object.entries(bodyTypeLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
+          )}
           <label className="admin-field--full"><span>Opis</span><textarea name="description" rows={5} defaultValue={vehicle?.description ?? ""} placeholder="Kratak i konkretan opis vozila…" /></label>
         </div>
       </section>
@@ -38,12 +58,23 @@ export default function VehicleForm({
         <div className="admin-form-section__intro"><span>02</span><div><h2>Specifikacije</h2><p>Podaci koji se prikazuju uz vozilo i koriste u filterima.</p></div></div>
         <div className="admin-form-grid admin-form-grid--specs">
           <label><span>Motor *</span><input name="engine" defaultValue={vehicle?.engine} required placeholder="1.6" /></label>
-          <label><span>Gorivo *</span><select name="fuel_type" defaultValue={vehicle?.fuel_type ?? "diesel"}><option value="petrol">Benzin</option><option value="diesel">Dizel</option><option value="hybrid">Hibrid</option><option value="electric">Električni</option><option value="lpg">LPG</option></select></label>
+          <label><span>Gorivo *</span><select name="fuel_type" defaultValue={vehicle?.fuel_type ?? (vehicleType === "car" ? "diesel" : "petrol")}><option value="petrol">Benzin</option><option value="diesel">Dizel</option><option value="hybrid">Hibrid</option><option value="electric">Električni</option><option value="lpg">LPG</option></select></label>
           <label><span>Menjač *</span><select name="transmission" defaultValue={vehicle?.transmission ?? "manual"}><option value="manual">Manuelni</option><option value="automatic">Automatski</option></select></label>
-          <label><span>Sedišta *</span><input name="seats" type="number" min="1" max="20" defaultValue={vehicle?.seats ?? 5} required /></label>
-          <label><span>Vrata</span><input name="doors" type="number" min="1" max="10" defaultValue={vehicle?.doors ?? ""} /></label>
-          <label className="admin-check"><input name="air_conditioning" type="checkbox" defaultChecked={vehicle?.air_conditioning ?? true} /><span>Klima</span></label>
-          <label className="admin-check"><input name="cruise_control" type="checkbox" defaultChecked={vehicle?.cruise_control ?? false} /><span>Tempomat</span></label>
+          <label><span>Sedišta *</span><input name="seats" type="number" min="1" max="20" defaultValue={vehicle?.seats ?? (vehicleType === "car" ? 5 : 2)} required /></label>
+          {vehicleType === "car" ? (
+            <>
+              <label><span>Vrata</span><input name="doors" type="number" min="1" max="10" defaultValue={vehicle?.doors ?? ""} /></label>
+              <label className="admin-check"><input name="air_conditioning" type="checkbox" defaultChecked={vehicle?.air_conditioning ?? true} /><span>Klima</span></label>
+              <label className="admin-check"><input name="cruise_control" type="checkbox" defaultChecked={vehicle?.cruise_control ?? false} /><span>Tempomat</span></label>
+            </>
+          ) : (
+            <>
+              <label><span>Snaga (kW) *</span><input name="power_kw" type="number" min="1" max="9999" defaultValue={vehicle?.power_kw ?? ""} required /></label>
+              <label><span>Kategorija dozvole *</span><input name="license_category" maxLength={10} defaultValue={vehicle?.license_category ?? ""} required placeholder="A, A1, A2, AM" /></label>
+              <label><span>Težina (kg)</span><input name="weight_kg" type="number" min="1" max="9999" defaultValue={vehicle?.weight_kg ?? ""} /></label>
+              <label><span>Visina sedišta (mm)</span><input name="seat_height_mm" type="number" min="1" max="9999" defaultValue={vehicle?.seat_height_mm ?? ""} /></label>
+            </>
+          )}
         </div>
       </section>
 

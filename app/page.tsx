@@ -42,11 +42,17 @@ function toLandingVehicle(vehicle: DatabaseVehicle): LandingVehicle | null {
     dailyPrice: Math.min(...dailyPrices),
     image,
     imagePosition: vehicle.image_position ?? undefined,
-    facts: [
-      `${vehicle.engine} ${fuelLabels[vehicle.fuel_type].toLocaleLowerCase("sr-Latn")}`,
-      vehicle.transmission === "manual" ? "Manuelni" : "Automatski",
-      `${vehicle.seats} sedišta`,
-    ],
+    facts: vehicle.type === "motorcycle"
+      ? [
+          `${vehicle.engine} ${fuelLabels[vehicle.fuel_type].toLocaleLowerCase("sr-Latn")}`,
+          `${vehicle.power_kw} kW`,
+          `Kategorija ${vehicle.license_category}`,
+        ]
+      : [
+          `${vehicle.engine} ${fuelLabels[vehicle.fuel_type].toLocaleLowerCase("sr-Latn")}`,
+          vehicle.transmission === "manual" ? "Manuelni" : "Automatski",
+          `${vehicle.seats} sedišta`,
+        ],
   };
 }
 
@@ -230,7 +236,6 @@ export default async function Home() {
   }
 
   const vehiclesBySlug = new Map(vehicles.map((vehicle) => [vehicle.slug, vehicle]));
-  const aboutVehicle = vehiclesBySlug.get("skoda-rapid") ?? vehicles[1] ?? vehicles[0];
   const reviewVehicle = vehiclesBySlug.get("opel-insignia") ?? vehicles[2] ?? vehicles[0];
   const contactVehicle = vehiclesBySlug.get("skoda-rapid") ?? vehicles[0];
   const structuredData = {
@@ -424,11 +429,12 @@ export default async function Home() {
         <section className="section section--about" data-index="04">
           <div className="page-shell about-layout">
             <div className="about-image">
-              {aboutVehicle?.image ? (
-                <Image src={aboutVehicle.image} alt={`${aboutVehicle.make} ${aboutVehicle.model} iz DDM Rent a Car flote`} fill sizes="(max-width: 900px) 92vw, 46vw" style={{ objectPosition: aboutVehicle.imagePosition ?? "center" }} />
-              ) : (
-                <span className="media-placeholder">DDM flota</span>
-              )}
+              <Image
+                src="/slikaprostor1.JPG"
+                alt="DDM Company poslovni prostor i servis Novi Sad"
+                fill
+                sizes="(max-width: 900px) 92vw, 46vw"
+              />
             </div>
             <div className="about-copy">
               <p className="eyebrow">O nama</p>

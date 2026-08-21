@@ -81,8 +81,17 @@ export default async function VehiclePage({ params }: VehiclePageProps) {
             <p>{vehicle.description}</p>
             <div className="vehicle-detail__quick-facts">
               <div><span>Motor</span><strong>{vehicle.engine} {fuelLabels[vehicle.fuel_type].toLocaleLowerCase("sr-Latn")}</strong></div>
-              <div><span>Menjač</span><strong>{vehicle.transmission === "manual" ? "Manuelni" : "Automatski"}</strong></div>
-              <div><span>Sedišta</span><strong>{vehicle.seats}</strong></div>
+              {vehicle.type === "motorcycle" ? (
+                <>
+                  <div><span>Snaga</span><strong>{vehicle.power_kw} kW</strong></div>
+                  <div><span>Kategorija</span><strong>{vehicle.license_category}</strong></div>
+                </>
+              ) : (
+                <>
+                  <div><span>Menjač</span><strong>{vehicle.transmission === "manual" ? "Manuelni" : "Automatski"}</strong></div>
+                  <div><span>Sedišta</span><strong>{vehicle.seats}</strong></div>
+                </>
+              )}
             </div>
             <button className="button" type="button" data-inquiry-trigger data-vehicle-slug={vehicle.slug}>Pošalji upit za ovo vozilo <span>↗</span></button>
           </div>
@@ -94,14 +103,29 @@ export default async function VehiclePage({ params }: VehiclePageProps) {
               <p className="eyebrow">Specifikacije</p>
               <h2>Podaci o vozilu</h2>
               <dl className="vehicle-specs">
-                <div><dt>Karoserija</dt><dd>{bodyTypeLabels[vehicle.body_type]}</dd></div>
-                <div><dt>Gorivo</dt><dd>{fuelLabels[vehicle.fuel_type]}</dd></div>
-                <div><dt>Motor</dt><dd>{vehicle.engine}</dd></div>
-                <div><dt>Menjač</dt><dd>{vehicle.transmission === "manual" ? "Manuelni" : "Automatski"}</dd></div>
-                <div><dt>Broj sedišta</dt><dd>{vehicle.seats}</dd></div>
-                <div><dt>Broj vrata</dt><dd>{vehicle.doors ?? "Nije navedeno"}</dd></div>
-                <div><dt>Klima</dt><dd>{vehicle.air_conditioning ? "Da" : "Ne"}</dd></div>
-                {vehicle.cruise_control && <div><dt>Tempomat</dt><dd>Da</dd></div>}
+                {vehicle.type === "car" ? (
+                  <>
+                    {vehicle.body_type && <div><dt>Karoserija</dt><dd>{bodyTypeLabels[vehicle.body_type]}</dd></div>}
+                    <div><dt>Gorivo</dt><dd>{fuelLabels[vehicle.fuel_type]}</dd></div>
+                    <div><dt>Motor</dt><dd>{vehicle.engine}</dd></div>
+                    <div><dt>Menjač</dt><dd>{vehicle.transmission === "manual" ? "Manuelni" : "Automatski"}</dd></div>
+                    <div><dt>Broj sedišta</dt><dd>{vehicle.seats}</dd></div>
+                    {vehicle.doors && <div><dt>Broj vrata</dt><dd>{vehicle.doors}</dd></div>}
+                    <div><dt>Klima</dt><dd>{vehicle.air_conditioning ? "Da" : "Ne"}</dd></div>
+                    {vehicle.cruise_control && <div><dt>Tempomat</dt><dd>Da</dd></div>}
+                  </>
+                ) : (
+                  <>
+                    <div><dt>Kategorija dozvole</dt><dd>{vehicle.license_category}</dd></div>
+                    <div><dt>Gorivo</dt><dd>{fuelLabels[vehicle.fuel_type]}</dd></div>
+                    <div><dt>Motor</dt><dd>{vehicle.engine}</dd></div>
+                    <div><dt>Snaga</dt><dd>{vehicle.power_kw} kW</dd></div>
+                    <div><dt>Menjač</dt><dd>{vehicle.transmission === "manual" ? "Manuelni" : "Automatski"}</dd></div>
+                    <div><dt>Broj sedišta</dt><dd>{vehicle.seats}</dd></div>
+                    {vehicle.weight_kg && <div><dt>Težina</dt><dd>{vehicle.weight_kg} kg</dd></div>}
+                    {vehicle.seat_height_mm && <div><dt>Visina sedišta</dt><dd>{vehicle.seat_height_mm} mm</dd></div>}
+                  </>
+                )}
               </dl>
             </div>
             <div>

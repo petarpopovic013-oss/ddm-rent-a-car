@@ -82,8 +82,17 @@ export default async function VehiclesPage() {
                         <h2><Link href={`/vozila/${vehicle.slug}`}>{vehicle.make} {vehicle.model}</Link></h2>
                         <ul>
                           <li>{vehicle.engine} {fuelLabels[vehicle.fuel_type].toLocaleLowerCase("sr-Latn")}</li>
-                          <li>{vehicle.transmission === "manual" ? "Manuelni" : "Automatski"}</li>
-                          <li>{vehicle.seats} sedišta</li>
+                          {vehicle.type === "motorcycle" ? (
+                            <>
+                              <li>{vehicle.power_kw} kW</li>
+                              <li>Kat. {vehicle.license_category}</li>
+                            </>
+                          ) : (
+                            <>
+                              <li>{vehicle.transmission === "manual" ? "Manuelni" : "Automatski"}</li>
+                              <li>{vehicle.seats} sedišta</li>
+                            </>
+                          )}
                         </ul>
                         <div className="catalog-card__footer">
                           <div><small>od</small><strong>{price(lowestDaily)} RSD</strong><span>/ dan</span></div>

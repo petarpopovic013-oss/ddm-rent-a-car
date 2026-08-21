@@ -1,4 +1,5 @@
 export type VehicleStatus = "active" | "hidden" | "service" | "archived";
+export type VehicleType = "car" | "motorcycle";
 export type ReservationStatus = "pending" | "accepted" | "rejected";
 export type PricingMode = "daily" | "fixed";
 export type BodyType =
@@ -40,11 +41,16 @@ export type Vehicle = {
   engine: string;
   fuel_type: "petrol" | "diesel" | "hybrid" | "electric" | "lpg";
   transmission: "manual" | "automatic";
-  body_type: BodyType;
+  type: VehicleType;
+  power_kw: number | null;
+  license_category: string | null;
+  weight_kg: number | null;
+  seat_height_mm: number | null;
+  body_type: BodyType | null;
   seats: number;
   doors: number | null;
-  air_conditioning: boolean;
-  cruise_control: boolean;
+  air_conditioning: boolean | null;
+  cruise_control: boolean | null;
   primary_image_path: string | null;
   image_position: string | null;
   status: VehicleStatus;

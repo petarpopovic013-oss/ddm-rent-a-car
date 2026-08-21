@@ -16,6 +16,7 @@ const optionalInteger = (min: number, max: number) =>
   );
 
 const vehicleSchema = z.object({
+  type: z.enum(["car", "motorcycle"]),
   make: z.string().trim().min(1).max(80),
   model: z.string().trim().min(1).max(80),
   year: optionalInteger(1990, 2100),
@@ -34,11 +35,15 @@ const vehicleSchema = z.object({
     "convertible",
     "pickup",
     "other",
-  ]),
+  ]).nullable(),
   seats: z.coerce.number().int().min(1).max(20),
   doors: optionalInteger(1, 10),
-  air_conditioning: z.boolean(),
-  cruise_control: z.boolean(),
+  air_conditioning: z.boolean().nullable(),
+  cruise_control: z.boolean().nullable(),
+  power_kw: optionalInteger(1, 9999),
+  license_category: z.string().trim().max(10).nullable(),
+  weight_kg: optionalInteger(1, 9999),
+  seat_height_mm: optionalInteger(1, 9999),
   status: z.enum(["active", "hidden", "service", "archived"]),
   featured: z.boolean(),
   sort_order: z.coerce.number().int().min(0).max(9999),
@@ -46,6 +51,14 @@ const vehicleSchema = z.object({
   price_4_10: z.coerce.number().int().positive(),
   price_11_25: z.coerce.number().int().positive(),
   price_26_31: optionalInteger(1, 999_999_999),
+}).refine((data) => {
+  if (data.type === "car") {
+    return data.body_type !== null && data.air_conditioning !== null && data.cruise_control !== null;
+  } else {
+    return data.power_kw !== null && data.license_category !== null;
+  }
+}, {
+  message: "Popunite sva obavezna polja za izabrani tip vozila.",
 });
 
 const reservationSchema = z.object({
@@ -91,7 +104,9 @@ function destination(path: string, type: "success" | "error", message: string) {
 }
 
 function parseVehicle(formData: FormData) {
+  const type = value(formData, "type") || "car";
   return vehicleSchema.parse({
+    type,
     make: value(formData, "make"),
     model: value(formData, "model"),
     year: value(formData, "year"),
@@ -100,11 +115,15 @@ function parseVehicle(formData: FormData) {
     engine: value(formData, "engine"),
     fuel_type: value(formData, "fuel_type"),
     transmission: value(formData, "transmission"),
-    body_type: value(formData, "body_type"),
+    body_type: nullableValue(formData, "body_type") as any,
     seats: value(formData, "seats"),
     doors: value(formData, "doors"),
-    air_conditioning: formData.get("air_conditioning") === "on",
-    cruise_control: formData.get("cruise_control") === "on",
+    air_conditioning: type === "car" ? formData.get("air_conditioning") === "on" : null,
+    cruise_control: type === "car" ? formData.get("cruise_control") === "on" : null,
+    power_kw: value(formData, "power_kw"),
+    license_category: nullableValue(formData, "license_category"),
+    weight_kg: value(formData, "weight_kg"),
+    seat_height_mm: value(formData, "seat_height_mm"),
     status: value(formData, "status"),
     featured: formData.get("featured") === "on",
     sort_order: value(formData, "sort_order"),
@@ -243,6 +262,7 @@ function vehicleRecord(
 ) {
   return {
     slug,
+    type: data.type,
     make: data.make,
     model: data.model,
     year: data.year,
@@ -256,6 +276,10 @@ function vehicleRecord(
     doors: data.doors,
     air_conditioning: data.air_conditioning,
     cruise_control: data.cruise_control,
+    power_kw: data.power_kw,
+    license_category: data.license_category,
+    weight_kg: data.weight_kg,
+    seat_height_mm: data.seat_height_mm,
     primary_image_path: primaryImagePath,
     status: data.status,
     featured: data.featured,
