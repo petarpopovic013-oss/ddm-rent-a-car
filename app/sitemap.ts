@@ -15,7 +15,12 @@ function alternates(path: string) {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const vehicles = await getPublicVehicles();
+  let vehicles: Awaited<ReturnType<typeof getPublicVehicles>> = [];
+  try {
+    vehicles = await getPublicVehicles();
+  } catch (error) {
+    console.error("Failed to load vehicles for sitemap:", error);
+  }
   const generatedAt = new Date();
   const staticPaths = ["/", "/vozila"];
 

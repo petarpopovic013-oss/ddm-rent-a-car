@@ -22,47 +22,66 @@ function tierLabel(minDays: number, locale: Locale) {
 }
 
 export async function getVehicleStaticParams() {
-  const vehicles = await getPublicVehicles();
-  return vehicles.map((vehicle) => ({ slug: vehicle.slug }));
+  try {
+    const vehicles = await getPublicVehicles();
+    return vehicles.map((vehicle) => ({ slug: vehicle.slug }));
+  } catch (error) {
+    console.error("Failed to fetch vehicles for static params:", error);
+    return [];
+  }
 }
 
 export async function generateVehicleMetadata(locale: Locale, slug: string): Promise<Metadata> {
   const dictionary = getDictionary(locale);
-  const vehicle = await getPublicVehicleBySlug(slug);
-  if (!vehicle) return { title: `${dictionary["vehicle.detail.notFound"]} | DDM Rent a Car` };
-  const image = vehicleImageUrl(vehicle.primary_image_path);
-  const copy = localizedVehicleCopy(vehicle, locale, dictionary);
-  const vehicleName = `${vehicle.make} ${vehicle.model}`;
-  const path = `/vozila/${vehicle.slug}`;
-  const url = localizedPath(locale, path);
+  try {
+    const vehicle = await getPublicVehicleBySlug(slug);
+    if (!vehicle) return { title: `${dictionary["vehicle.detail.notFound"]} | DDM Rent a Car` };
+    const image = vehicleImageUrl(vehicle.primary_image_path);
+    const copy = localizedVehicleCopy(vehicle, locale, dictionary);
+    const vehicleName = `${vehicle.make} ${vehicle.model}`;
+    const path = `/vozila/${vehicle.slug}`;
+    const url = localizedPath(locale, path);
 
-  return {
-    metadataBase: new URL(siteUrl),
-    title: `${vehicleName} | DDM Rent a Car Novi Sad`,
-    description: copy.description || formatMessage(dictionary["metadata.vehicle.description"], { vehicle: vehicleName }),
-    alternates: { canonical: url, languages: languageAlternates(path) },
-    openGraph: {
-      type: "website",
-      locale: localeConfig[locale].ogLocale,
-      alternateLocale: locales.filter((item) => item !== locale).map((item) => localeConfig[item].ogLocale),
-      url,
-      siteName: "DDM Rent a Car",
+    return {
+      metadataBase: new URL(siteUrl),
       title: `${vehicleName} | DDM Rent a Car Novi Sad`,
-      description: copy.description,
-      images: image ? [{ url: image, alt: vehicleName }] : undefined,
-    },
-  };
+      description: copy.description || formatMessage(dictionary["metadata.vehicle.description"], { vehicle: vehicleName }),
+      alternates: { canonical: url, languages: languageAlternates(path) },
+      openGraph: {
+        type: "website",
+        locale: localeConfig[locale].ogLocale,
+        alternateLocale: locales.filter((item) => item !== locale).map((item) => localeConfig[item].ogLocale),
+        url,
+        siteName: "DDM Rent a Car",
+        title: `${vehicleName} | DDM Rent a Car Novi Sad`,
+        description: copy.description,
+        images: image ? [{ url: image, alt: vehicleName }] : undefined,
+      },
+    };
+  } catch (error) {
+    console.error(`Failed to generate metadata for ${slug}:`, error);
+    return { title: `${dictionary["vehicle.detail.notFound"]} | DDM Rent a Car` };
+  }
 }
 
 export default async function VehiclePage({ params, locale }: VehiclePageProps & { locale: Locale }) {
   const { slug } = await params;
   const dictionary = getDictionary(locale);
   const formatPrice = new Intl.NumberFormat(localeConfig[locale].intlLocale);
-  const [vehicle, allVehicles, unavailablePeriods] = await Promise.all([
-    getPublicVehicleBySlug(slug),
-    getPublicVehicles(),
-    getAcceptedReservationPeriods(),
-  ]);
+  let vehicle = null;
+  let allVehicles: Awaited<ReturnType<typeof getPublicVehicles>> = [];
+  let unavailablePeriods: Awaited<ReturnType<typeof getAcceptedReservationPeriods>> = [];
+
+  try {
+    [vehicle, allVehicles, unavailablePeriods] = await Promise.all([
+      getPublicVehicleBySlug(slug),
+      getPublicVehicles(),
+      getAcceptedReservationPeriods(),
+    ]);
+  } catch (error) {
+    console.error(`Failed to load vehicle data for ${slug}:`, error);
+  }
+
   if (!vehicle) notFound();
   const copy = localizedVehicleCopy(vehicle, locale, dictionary);
   const fuel = localizedFuel(vehicle, dictionary);

@@ -13,10 +13,17 @@ import { localizedFuel, localizedTransmission, localizedVehicleCopy } from "@/li
 export default async function VehiclesPage({ locale }: { locale: Locale }) {
   const dictionary = getDictionary(locale);
   const formatPrice = new Intl.NumberFormat(localeConfig[locale].intlLocale);
-  const [vehicles, unavailablePeriods] = await Promise.all([
-    getPublicVehicles(),
-    getAcceptedReservationPeriods(),
-  ]);
+  let vehicles: Awaited<ReturnType<typeof getPublicVehicles>> = [];
+  let unavailablePeriods: Awaited<ReturnType<typeof getAcceptedReservationPeriods>> = [];
+
+  try {
+    [vehicles, unavailablePeriods] = await Promise.all([
+      getPublicVehicles(),
+      getAcceptedReservationPeriods(),
+    ]);
+  } catch (error) {
+    console.error("Public vehicles catalog could not be loaded:", error);
+  }
 
   return (
     <>
