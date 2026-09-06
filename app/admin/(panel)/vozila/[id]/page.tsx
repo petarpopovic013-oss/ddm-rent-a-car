@@ -4,8 +4,10 @@ import { getVehicle } from "@/lib/admin/data";
 import VehicleForm from "@/app/admin/components/vehicle-form";
 import { ConfirmForm } from "@/app/admin/components/form-controls";
 import { MessageBanner, PageHeader } from "@/app/admin/components/ui";
+import { requireAdmin } from "@/lib/admin/session";
 
 export default async function EditVehiclePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ success?: string; error?: string }> }) {
+  await requireAdmin();
   const [{ id }, messages] = await Promise.all([params, searchParams]);
   const vehicle = await getVehicle(id);
   if (!vehicle) notFound();

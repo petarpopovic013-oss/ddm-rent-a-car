@@ -1,11 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import type { Locale } from "@/lib/i18n/config";
+import { localeConfig } from "@/lib/i18n/config";
+import type { Dictionary } from "@/lib/i18n/translations";
+import { formatMessage } from "@/lib/i18n/translations";
 import styles from "./inquiry-modal.module.css";
-
-const weekdays = ["Pon", "Uto", "Sre", "Čet", "Pet", "Sub", "Ned"];
-const monthFormatter = new Intl.DateTimeFormat("sr-Latn-RS", { month: "long", year: "numeric" });
-const dateFormatter = new Intl.DateTimeFormat("sr-Latn-RS", { day: "numeric", month: "long", year: "numeric" });
 
 function isoDate(date: Date) {
   const year = date.getFullYear();
@@ -23,8 +23,13 @@ function differenceInDays(start: string, end: string) {
   return Math.round((dateFromIso(end).getTime() - dateFromIso(start).getTime()) / 86_400_000);
 }
 
-export function formatInquiryDate(value: string) {
-  return value ? dateFormatter.format(dateFromIso(value)) : "Nije izabrano";
+export function formatInquiryDate(value: string, locale: Locale, dictionary: Dictionary) {
+  const formatter = new Intl.DateTimeFormat(localeConfig[locale].intlLocale, {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+  return value ? formatter.format(dateFromIso(value)) : dictionary["common.notSelected"];
 }
 
 export default function DateRangeCalendar({
@@ -33,13 +38,30 @@ export default function DateRangeCalendar({
   maxRentalDays,
   unavailablePeriods,
   onChange,
+  locale,
+  dictionary,
 }: {
   pickupDate: string;
   returnDate: string;
   maxRentalDays: 25 | 31;
   unavailablePeriods: { pickupDate: string; returnDate: string }[];
   onChange: (pickupDate: string, returnDate: string) => void;
+  locale: Locale;
+  dictionary: Dictionary;
 }) {
+  const intlLocale = localeConfig[locale].intlLocale;
+  const monthFormatter = useMemo(
+    () => new Intl.DateTimeFormat(intlLocale, { month: "long", year: "numeric" }),
+    [intlLocale],
+  );
+  const dateFormatter = useMemo(
+    () => new Intl.DateTimeFormat(intlLocale, { day: "numeric", month: "long", year: "numeric" }),
+    [intlLocale],
+  );
+  const weekdays = useMemo(() => {
+    const formatter = new Intl.DateTimeFormat(intlLocale, { weekday: "short" });
+    return Array.from({ length: 7 }, (_, index) => formatter.format(new Date(2024, 0, index + 1)));
+  }, [intlLocale]);
   const today = useMemo(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
@@ -88,12 +110,12 @@ export default function DateRangeCalendar({
     <div className={styles.calendar}>
       <div className={styles.calendarStatus} aria-live="polite">
         <div className={pickupDate ? styles.calendarStatusDone : styles.calendarStatusActive}>
-          <span>01 · Preuzimanje</span>
-          <strong>{formatInquiryDate(pickupDate)}</strong>
+          <span>01 · {dictionary["calendar.pickup"]}</span>
+          <strong>{formatInquiryDate(pickupDate, locale, dictionary)}</strong>
         </div>
         <div className={choosingReturn ? styles.calendarStatusActive : returnDate ? styles.calendarStatusDone : ""}>
-          <span>02 · Vraćanje</span>
-          <strong>{formatInquiryDate(returnDate)}</strong>
+          <span>02 · {dictionary["calendar.return"]}</span>
+          <strong>{formatInquiryDate(returnDate, locale, dictionary)}</strong>
         </div>
       </div>
       <div className={styles.calendarHeader}>
@@ -101,13 +123,13 @@ export default function DateRangeCalendar({
           type="button"
           onClick={() => setVisibleMonth((month) => new Date(month.getFullYear(), month.getMonth() - 1, 1, 12))}
           disabled={!canGoBack}
-          aria-label="Prethodni mesec"
+          aria-label={dictionary["calendar.previousMonth"]}
         >←</button>
         <strong>{monthFormatter.format(visibleMonth)}</strong>
         <button
           type="button"
           onClick={() => setVisibleMonth((month) => new Date(month.getFullYear(), month.getMonth() + 1, 1, 12))}
-          aria-label="Sledeći mesec"
+          aria-label={dictionary["calendar.nextMonth"]}
         >→</button>
       </div>
       <div className={styles.calendarWeekdays} aria-hidden="true">
@@ -140,7 +162,7 @@ export default function DateRangeCalendar({
               onClick={() => selectDate(value)}
               disabled={disabled}
               aria-pressed={selected}
-              aria-label={`${dateFormatter.format(date)}${disabled ? ", nije dostupno" : ""}`}
+              aria-label={`${dateFormatter.format(date)}${disabled ? `, ${dictionary["calendar.unavailable"]}` : ""}`}
             >
               <span>{date.getDate()}</span>
             </button>
@@ -148,8 +170,12 @@ export default function DateRangeCalendar({
         })}
       </div>
       <div className={styles.calendarFooter}>
-        <p>{choosingReturn ? `Izaberite datum vraćanja. Ovo vozilo može se rezervisati najviše ${maxRentalDays} dana, računajući i dan preuzimanja.` : returnDate ? "Termin je izabran. Možete nastaviti ili promeniti raspon." : "Prvo izaberite datum preuzimanja. Precrtani datumi su zauzeti."}</p>
-        {pickupDate && <button type="button" onClick={() => onChange("", "")}>Promeni termin</button>}
+        <p>{choosingReturn
+          ? formatMessage(dictionary["calendar.chooseReturn"], { days: maxRentalDays })
+          : returnDate
+            ? dictionary["calendar.selected"]
+            : dictionary["calendar.choosePickup"]}</p>
+        {pickupDate && <button type="button" onClick={() => onChange("", "")}>{dictionary["calendar.change"]}</button>}
       </div>
     </div>
   );

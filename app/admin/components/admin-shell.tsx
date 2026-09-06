@@ -14,7 +14,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
         <AdminNav />
         <div className="admin-sidebar__footer">
           <p>DDM Rent a Car</p>
-          <a href="/" target="_blank">Otvori javni sajt ↗</a>
+          <a href="/" target="_blank" rel="noopener noreferrer">Otvori javni sajt ↗</a>
           <form action={logoutAction}>
             <button type="submit">Odjavi se</button>
           </form>

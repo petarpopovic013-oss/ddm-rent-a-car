@@ -147,6 +147,16 @@
 .admin-form-section__intro h2 { margin: 0; color: #fff; font-size: 24px; text-transform: uppercase; }
 .admin-form-section__intro p { margin: 8px 0 0; font-size: 11px; line-height: 1.5; }
 .admin-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; padding: 30px; }
+.admin-translation-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; padding: 30px; }
+.admin-translation-grid fieldset { min-width: 0; margin: 0; border: 1px solid var(--admin-line); background: #fff; padding: 20px; }
+.admin-translation-grid legend { color: var(--admin-blue); padding-inline: 8px; font-family: var(--font-display), Arial, sans-serif; font-size: 16px; font-weight: 700; text-transform: uppercase; }
+.admin-translation-grid label { display: grid; gap: 7px; margin-top: 15px; }
+.admin-translation-grid label > span { color: var(--admin-blue); font-size: 9px; font-weight: 750; letter-spacing: .09em; text-transform: uppercase; }
+.admin-translation-grid input,
+.admin-translation-grid textarea { width: 100%; border: 1px solid var(--admin-line); background: #fff; color: var(--admin-ink); padding: 12px; font: inherit; font-size: 13px; }
+.admin-translation-grid textarea { resize: vertical; line-height: 1.55; }
+.admin-translation-grid input:focus,
+.admin-translation-grid textarea:focus { border-color: var(--admin-blue); outline: 2px solid rgba(41,59,145,.12); }
 .admin-form-grid label,
 .admin-image-field > label,
 .admin-pricing-grid > label,
@@ -273,6 +283,7 @@
   .admin-vehicle-grid { grid-template-columns: 1fr; }
   .admin-form-section { display: block; }
   .admin-form-section__intro { border-right: 0; border-bottom: 1px solid var(--admin-blue); }
+  .admin-translation-grid { grid-template-columns: 1fr; }
   .admin-media-grid { grid-template-columns: 1fr; }
   .admin-gallery-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .admin-filters { grid-template-columns: 1fr 1fr; }
@@ -292,7 +303,8 @@
   .admin-stats article > .admin-stat__money { margin-top: 29px; font-size: 19px; }
   .admin-form-grid,
   .admin-media-grid,
-  .admin-pricing-grid { grid-template-columns: 1fr; padding: 20px; }
+  .admin-pricing-grid,
+  .admin-translation-grid { grid-template-columns: 1fr; padding: 20px; }
   .admin-gallery-field { padding: 0 20px 20px; }
   .admin-gallery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .admin-form-grid--specs { grid-template-columns: 1fr; }
@@ -384,6 +396,8 @@
   .admin-form-grid input,
   .admin-form-grid select,
   .admin-form-grid textarea,
+  .admin-translation-grid input,
+  .admin-translation-grid textarea,
   .admin-image-field input,
   .admin-pricing-grid input,
   .admin-gallery-field > label > input,
@@ -397,7 +411,8 @@
   .admin-form-grid,
   .admin-form-grid--specs,
   .admin-media-grid,
-  .admin-pricing-grid { grid-template-columns: 1fr; gap: 15px; padding: 18px; }
+  .admin-pricing-grid,
+  .admin-translation-grid { grid-template-columns: 1fr; gap: 15px; padding: 18px; }
   .admin-image-preview,
   .admin-image-placeholder { min-height: 0; aspect-ratio: 4 / 3; }
   .admin-pricing-grid { gap: 0; }

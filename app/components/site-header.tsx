@@ -3,17 +3,20 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import type { Locale } from "@/lib/i18n/config";
+import { localizedPath } from "@/lib/i18n/config";
+import type { Dictionary } from "@/lib/i18n/translations";
+import LanguageSelector from "./language-selector";
 
-const navItems = [
-  ["Flota", "/vozila"],
-  ["Prednosti", "/#prednosti"],
-  ["Kako funkcioniše", "/#kako-funkcionise"],
-  ["FAQ", "/#faq"],
-  ["Kontakt", "/#kontakt"],
-];
-
-export default function SiteHeader() {
+export default function SiteHeader({ locale, dictionary }: { locale: Locale; dictionary: Dictionary }) {
   const [open, setOpen] = useState(false);
+  const navItems = [
+    [dictionary["nav.fleet"], localizedPath(locale, "/vozila")],
+    [dictionary["nav.benefits"], localizedPath(locale, "/#prednosti")],
+    [dictionary["nav.process"], localizedPath(locale, "/#kako-funkcionise")],
+    [dictionary["nav.faq"], localizedPath(locale, "/#faq")],
+    [dictionary["nav.contact"], localizedPath(locale, "/#kontakt")],
+  ];
 
   useEffect(() => {
     if (!open) return;
@@ -33,22 +36,23 @@ export default function SiteHeader() {
     <>
       <header className="header">
         <div className="page-shell header__inner">
-          <Link className="header__logo" href="/" aria-label="DDM Rent a Car početna strana">
+          <Link className="header__logo" href={localizedPath(locale)} aria-label={dictionary["header.home"]}>
             <Image src="/Logo/DDM-RC.png" alt="DDM Company" width={946} height={392} priority sizes="190px" />
           </Link>
-          <nav className="header__nav" aria-label="Glavna navigacija">
+          <nav className="header__nav" aria-label={dictionary["header.mainNav"]}>
             {navItems.map(([label, href]) => (
               <Link href={href} key={href}>{label}</Link>
             ))}
           </nav>
+          <LanguageSelector locale={locale} dictionary={dictionary} />
           <button className="button button--header" type="button" data-inquiry-trigger>
-            Pošalji upit <span aria-hidden="true">↗</span>
+            {dictionary["action.inquiry"]} <span aria-hidden="true">↗</span>
           </button>
           <button
             className="menu-button"
             type="button"
             onClick={() => setOpen(true)}
-            aria-label="Otvori meni"
+            aria-label={dictionary["header.openMenu"]}
             aria-expanded={open}
           >
             <span />
@@ -57,22 +61,23 @@ export default function SiteHeader() {
         </div>
       </header>
       {open && (
-        <div className="mobile-menu" role="dialog" aria-modal="true" aria-label="Mobilna navigacija">
-          <button className="mobile-menu__backdrop" aria-label="Zatvori meni" onClick={() => setOpen(false)} />
+        <div className="mobile-menu" role="dialog" aria-modal="true" aria-label={dictionary["header.mobileNav"]}>
+          <button className="mobile-menu__backdrop" aria-label={dictionary["header.closeMenu"]} onClick={() => setOpen(false)} />
           <div className="mobile-menu__panel">
             <div className="mobile-menu__top">
               <Image src="/Logo/DDM-RC.png" alt="DDM Company" width={946} height={392} sizes="170px" />
-              <button type="button" onClick={() => setOpen(false)} aria-label="Zatvori meni">×</button>
+              <button type="button" onClick={() => setOpen(false)} aria-label={dictionary["header.closeMenu"]}>×</button>
             </div>
-            <nav aria-label="Mobilna navigacija">
+            <nav aria-label={dictionary["header.mobileNav"]}>
               {navItems.map(([label, href], index) => (
                 <Link href={href} key={href} onClick={() => setOpen(false)}>
                   <span>0{index + 1}</span>{label}
                 </Link>
               ))}
             </nav>
+            <LanguageSelector locale={locale} dictionary={dictionary} mobile />
             <div className="mobile-menu__contact">
-              <span>Upiti i informacije</span>
+              <span>{dictionary["header.inquiries"]}</span>
               <a href="tel:+381641334589">+381 64 133 4589</a>
               <a href="mailto:ddmcompany@gmail.com">ddmcompany@gmail.com</a>
             </div>

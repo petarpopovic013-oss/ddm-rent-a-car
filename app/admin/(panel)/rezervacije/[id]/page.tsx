@@ -5,8 +5,10 @@ import { formatDateTime, formatRsd } from "@/lib/admin/format";
 import ReservationForm from "@/app/admin/components/reservation-form";
 import { ConfirmForm } from "@/app/admin/components/form-controls";
 import { MessageBanner, PageHeader, ReservationStatusBadge } from "@/app/admin/components/ui";
+import { requireAdmin } from "@/lib/admin/session";
 
 export default async function EditReservationPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ success?: string; error?: string }> }) {
+  await requireAdmin();
   const [{ id }, messages] = await Promise.all([params, searchParams]);
   const [reservation, vehicles] = await Promise.all([getReservation(id), getVehicles()]);
   if (!reservation) notFound();

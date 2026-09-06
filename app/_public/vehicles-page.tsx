@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import InquiryModal from "@/app/components/inquiry-modal";
@@ -6,19 +5,14 @@ import FloatingInquiryButton from "@/app/components/floating-inquiry-button";
 import SiteFooter from "@/app/components/site-footer";
 import SiteHeader from "@/app/components/site-header";
 import { getAcceptedReservationPeriods, getPublicVehicles, unavailablePeriodsForVehicle, vehicleImageUrl } from "@/lib/admin/data";
-import { fuelLabels } from "@/lib/admin/types";
+import type { Locale } from "@/lib/i18n/config";
+import { localeConfig, localizedPath } from "@/lib/i18n/config";
+import { getDictionary } from "@/lib/i18n/translations";
+import { localizedFuel, localizedTransmission, localizedVehicleCopy } from "@/lib/i18n/vehicle";
 
-export const metadata: Metadata = {
-  title: "Vozila za iznajmljivanje | DDM Rent a Car Novi Sad",
-  description: "Pregledajte DDM Rent a Car flotu, karakteristike i cene vozila za iznajmljivanje u Novom Sadu.",
-  alternates: { canonical: "/vozila" },
-};
-
-function price(value: number) {
-  return new Intl.NumberFormat("sr-RS").format(value);
-}
-
-export default async function VehiclesPage() {
+export default async function VehiclesPage({ locale }: { locale: Locale }) {
+  const dictionary = getDictionary(locale);
+  const formatPrice = new Intl.NumberFormat(localeConfig[locale].intlLocale);
   const [vehicles, unavailablePeriods] = await Promise.all([
     getPublicVehicles(),
     getAcceptedReservationPeriods(),
@@ -26,15 +20,15 @@ export default async function VehiclesPage() {
 
   return (
     <>
-      <SiteHeader />
+      <SiteHeader locale={locale} dictionary={dictionary} />
       <main className="catalog-page">
         <section className="catalog-hero">
           <div className="page-shell catalog-hero__inner">
             <div>
-              <p className="eyebrow">DDM flota</p>
-              <h1>Izaberite vozilo za svoj put.</h1>
+              <p className="eyebrow">{dictionary["catalog.eyebrow"]}</p>
+              <h1>{dictionary["catalog.title"]}</h1>
             </div>
-            <p>Pregledajte fotografije, specifikacije i cenovnik svakog vozila.</p>
+            <p>{dictionary["catalog.copy"]}</p>
           </div>
         </section>
 
@@ -44,6 +38,8 @@ export default async function VehiclesPage() {
               <div className="catalog-grid">
                 {vehicles.map((vehicle, index) => {
                   const image = vehicleImageUrl(vehicle.primary_image_path);
+                  const copy = localizedVehicleCopy(vehicle, locale, dictionary);
+                  const href = localizedPath(locale, `/vozila/${vehicle.slug}`);
                   const lowestDaily = Math.min(
                     ...(vehicle.rc_vehicle_pricing_tiers ?? [])
                       .filter((tier) => tier.pricing_mode === "daily")
@@ -52,7 +48,7 @@ export default async function VehiclesPage() {
 
                   return (
                     <article className="catalog-card" key={vehicle.id}>
-                      <Link className="catalog-card__image" href={`/vozila/${vehicle.slug}`}>
+                      <Link className="catalog-card__image" href={href}>
                         {image ? (
                           <>
                             <Image
@@ -73,30 +69,30 @@ export default async function VehiclesPage() {
                             />
                           </>
                         ) : (
-                          <span>DDM / fotografija vozila</span>
+                          <span>{dictionary["common.vehiclePhoto"]}</span>
                         )}
                         <b>{String(index + 1).padStart(2, "0")}</b>
                       </Link>
                       <div className="catalog-card__body">
-                        <span>{vehicle.category}</span>
-                        <h2><Link href={`/vozila/${vehicle.slug}`}>{vehicle.make} {vehicle.model}</Link></h2>
+                        <span>{copy.category}</span>
+                        <h2><Link href={href}>{vehicle.make} {vehicle.model}</Link></h2>
                         <ul>
-                          <li>{vehicle.engine} {fuelLabels[vehicle.fuel_type].toLocaleLowerCase("sr-Latn")}</li>
+                          <li>{vehicle.engine} {localizedFuel(vehicle, dictionary).toLocaleLowerCase()}</li>
                           {vehicle.type === "motorcycle" ? (
                             <>
                               <li>{vehicle.power_kw} kW</li>
-                              <li>Kat. {vehicle.license_category}</li>
+                              <li>{dictionary["vehicle.licenseShort"]} {vehicle.license_category}</li>
                             </>
                           ) : (
                             <>
-                              <li>{vehicle.transmission === "manual" ? "Manuelni" : "Automatski"}</li>
-                              <li>{vehicle.seats} sedišta</li>
+                              <li>{localizedTransmission(vehicle, dictionary)}</li>
+                              <li>{vehicle.seats} {dictionary["vehicle.seats"]}</li>
                             </>
                           )}
                         </ul>
                         <div className="catalog-card__footer">
-                          <div><small>od</small><strong>{price(lowestDaily)} RSD</strong><span>/ dan</span></div>
-                          <Link className="button button--small" href={`/vozila/${vehicle.slug}`}>Pogledaj vozilo <b>↗</b></Link>
+                          <div><small>{dictionary["common.from"]}</small><strong>{formatPrice.format(lowestDaily)} RSD</strong><span>{dictionary["common.perDay"]}</span></div>
+                          <Link className="button button--small" href={href}>{dictionary["action.viewVehicle"]} <b>↗</b></Link>
                         </div>
                       </div>
                     </article>
@@ -104,13 +100,13 @@ export default async function VehiclesPage() {
                 })}
               </div>
             ) : (
-              <div className="fleet-empty"><strong>Ponuda se trenutno osvežava.</strong><span>Kontaktirajte DDM tim za dostupna vozila.</span></div>
+              <div className="fleet-empty"><strong>{dictionary["catalog.emptyTitle"]}</strong><span>{dictionary["catalog.emptyCopy"]}</span></div>
             )}
           </div>
         </section>
       </main>
-      <SiteFooter />
-      <FloatingInquiryButton />
+      <SiteFooter locale={locale} dictionary={dictionary} />
+      <FloatingInquiryButton dictionary={dictionary} />
       <InquiryModal vehicles={vehicles.map((vehicle) => ({
         slug: vehicle.slug,
         label: `${vehicle.make} ${vehicle.model}`,
@@ -121,7 +117,7 @@ export default async function VehiclesPage() {
           pricingMode: tier.pricing_mode,
         })),
         unavailablePeriods: unavailablePeriodsForVehicle(unavailablePeriods, vehicle.id),
-      }))} />
+      }))} locale={locale} dictionary={dictionary} />
     </>
   );
 }

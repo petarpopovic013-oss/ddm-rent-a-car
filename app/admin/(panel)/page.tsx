@@ -2,8 +2,10 @@ import Link from "next/link";
 import { getDashboardData } from "@/lib/admin/data";
 import { formatDate, formatDateTime, formatRsd } from "@/lib/admin/format";
 import { ReservationStatusBadge } from "../components/ui";
+import { requireAdmin } from "@/lib/admin/session";
 
 export default async function AdminDashboardPage() {
+  await requireAdmin();
   const stats = await getDashboardData();
   return (
     <main className="admin-main">

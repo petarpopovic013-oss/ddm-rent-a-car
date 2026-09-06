@@ -4,6 +4,9 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { ensureVehicleAvailable, getPricingForPeriod } from "@/lib/admin/data";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { isLocale, type Locale } from "@/lib/i18n/config";
+import { getDictionary } from "@/lib/i18n/translations";
+import { consumeRateLimit } from "@/lib/security/rate-limit";
 
 type InquiryState = {
   status: "idle" | "success" | "error";
@@ -14,6 +17,7 @@ const MONTHLY_RENTAL_MIN_DAYS = 26;
 const MAX_RENTAL_DAYS = 31;
 
 const inquirySchema = z.object({
+  locale: z.enum(["sr", "en", "de", "ru"]),
   vehicle_slug: z.string().trim().min(1).max(100),
   customer_name: z.string().trim().min(2).max(120),
   customer_email: z.string().trim().toLowerCase().email().max(254),
@@ -33,11 +37,24 @@ export async function submitInquiryAction(
   _previousState: InquiryState,
   formData: FormData,
 ): Promise<InquiryState> {
+  const requestedLocale = formValue(formData, "locale");
+  const locale: Locale = isLocale(requestedLocale) ? requestedLocale : "sr";
+  const dictionary = getDictionary(locale);
+
   if (formValue(formData, "website")) {
-    return { status: "success", message: "Upit je poslat." };
+    return { status: "success", message: dictionary["action.sentShort"] };
+  }
+
+  if (!(await consumeRateLimit({
+    scope: "public-inquiry-ip",
+    limit: 6,
+    windowSeconds: 15 * 60,
+  }))) {
+    return { status: "error", message: dictionary["action.rateLimited"] };
   }
 
   const parsed = inquirySchema.safeParse({
+    locale,
     vehicle_slug: formValue(formData, "vehicle_slug"),
     customer_name: formValue(formData, "customer_name"),
     customer_email: formValue(formData, "customer_email"),
@@ -50,21 +67,30 @@ export async function submitInquiryAction(
   });
 
   if (!parsed.success) {
-    return { status: "error", message: "Proverite obavezna polja i pokušajte ponovo." };
+    return { status: "error", message: dictionary["action.invalid"] };
   }
 
   const data = parsed.data;
+  if (!(await consumeRateLimit({
+    scope: "public-inquiry-contact",
+    limit: 4,
+    windowSeconds: 60 * 60,
+    subject: `${data.customer_email}|${data.customer_phone}`,
+    bindToRequest: false,
+  }))) {
+    return { status: "error", message: dictionary["action.rateLimited"] };
+  }
   const start = new Date(`${data.pickup_date}T12:00:00Z`);
   const end = new Date(`${data.return_date}T12:00:00Z`);
   const rentalDays = Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1;
   const today = new Date().toISOString().slice(0, 10);
   if (data.pickup_date < today) {
-    return { status: "error", message: "Datum preuzimanja ne može biti u prošlosti." };
+    return { status: "error", message: dictionary["action.pastDate"] };
   }
   if (!Number.isInteger(rentalDays) || rentalDays < 1 || rentalDays > MAX_RENTAL_DAYS) {
     return {
       status: "error",
-      message: "Vozilo je moguće rezervisati najduže 31 dan.",
+      message: dictionary["action.maxDays"],
     };
   }
 
@@ -84,7 +110,7 @@ export async function submitInquiryAction(
         .maybeSingle();
       if (vehicle.error) throw new Error(vehicle.error.message);
       if (!vehicle.data) {
-        return { status: "error", message: "Izabrano vozilo više nije dostupno." };
+        return { status: "error", message: dictionary["action.unavailableVehicle"] };
       }
       const selectedVehicleId = vehicle.data.id;
       vehicleId = selectedVehicleId;
@@ -95,7 +121,7 @@ export async function submitInquiryAction(
       } catch {
         return {
           status: "error",
-          message: "Vozilo je već rezervisano u izabranom terminu. Izaberite drugi termin ili vozilo.",
+          message: dictionary["action.booked"],
         };
       }
 
@@ -107,7 +133,7 @@ export async function submitInquiryAction(
         if (rentalDays >= MONTHLY_RENTAL_MIN_DAYS) {
           return {
             status: "error",
-            message: "Za izabrano vozilo nije dostupna fiksna mesečna cena. Izaberite period do 25 dana.",
+            message: dictionary["action.noMonthly"],
           };
         }
         priceRsd = null;
@@ -143,12 +169,12 @@ export async function submitInquiryAction(
     revalidatePath("/admin/rezervacije");
     return {
       status: "success",
-      message: "Upit je poslat. DDM tim će vam se javiti sa potvrdom dostupnosti i detaljima preuzimanja.",
+      message: dictionary["action.success"],
     };
   } catch {
     return {
       status: "error",
-      message: "Upit trenutno nije moguće poslati. Pokušajte ponovo ili nas pozovite.",
+      message: dictionary["action.failure"],
     };
   }
 }

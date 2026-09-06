@@ -5,8 +5,12 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { jwtVerify, SignJWT } from "jose";
 
-const COOKIE_NAME = "ddm_rc_admin";
+const COOKIE_NAME = process.env.NODE_ENV === "production"
+  ? "__Host-ddm_rc_admin"
+  : "ddm_rc_admin";
 const SESSION_DURATION_SECONDS = 8 * 60 * 60;
+const SESSION_ISSUER = "ddm-rentacar";
+const SESSION_AUDIENCE = "ddm-rentacar-admin";
 
 function sessionKey() {
   const secret = process.env.ADMIN_SESSION_SECRET;
@@ -20,6 +24,9 @@ async function createToken() {
   return new SignJWT({ role: "admin" })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject("ddm-rentacar-admin")
+    .setIssuer(SESSION_ISSUER)
+    .setAudience(SESSION_AUDIENCE)
+    .setJti(crypto.randomUUID())
     .setIssuedAt()
     .setExpirationTime(`${SESSION_DURATION_SECONDS}s`)
     .sign(sessionKey());
@@ -31,6 +38,8 @@ async function verifyToken(value?: string) {
     const { payload } = await jwtVerify(value, sessionKey(), {
       algorithms: ["HS256"],
       subject: "ddm-rentacar-admin",
+      issuer: SESSION_ISSUER,
+      audience: SESSION_AUDIENCE,
     });
     return payload.role === "admin";
   } catch {

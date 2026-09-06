@@ -9,7 +9,7 @@ import { SubmitButton } from "./form-controls";
 function vehicleImageUrl(path: string | null | undefined) {
   if (!path) return null;
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  return `${url}/storage/v1/object/public/vehicle-images/${path}`;
+  return `${url}/storage/v1/object/public/rc-vehicle-images/${path}`;
 }
 
 function tierPrice(tiers: PricingTier[] | undefined, minDays: number) {
@@ -51,6 +51,33 @@ export default function VehicleForm({
             <label><span>Tip karoserije *</span><select name="body_type" defaultValue={vehicle?.body_type ?? "hatchback"}>{Object.entries(bodyTypeLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
           )}
           <label className="admin-field--full"><span>Opis</span><textarea name="description" rows={5} defaultValue={vehicle?.description ?? ""} placeholder="Kratak i konkretan opis vozila…" /></label>
+        </div>
+      </section>
+
+      <section className="admin-form-section">
+        <div className="admin-form-section__intro">
+          <span>01A</span>
+          <div>
+            <h2>Prevodi za javni sajt</h2>
+            <p>Kategorija i opis vozila na engleskom, nemačkom i ruskom. Sva polja su obavezna pre aktiviranja vozila.</p>
+          </div>
+        </div>
+        <div className="admin-translation-grid">
+          <fieldset>
+            <legend>English · EN</legend>
+            <label><span>Kategorija na engleskom</span><input name="category_en" defaultValue={vehicle?.category_en ?? ""} maxLength={100} placeholder="City car" /></label>
+            <label><span>Opis na engleskom</span><textarea name="description_en" rows={5} defaultValue={vehicle?.description_en ?? ""} maxLength={4000} /></label>
+          </fieldset>
+          <fieldset>
+            <legend>Deutsch · DE</legend>
+            <label><span>Kategorija na nemačkom</span><input name="category_de" defaultValue={vehicle?.category_de ?? ""} maxLength={100} placeholder="Stadtauto" /></label>
+            <label><span>Opis na nemačkom</span><textarea name="description_de" rows={5} defaultValue={vehicle?.description_de ?? ""} maxLength={4000} /></label>
+          </fieldset>
+          <fieldset>
+            <legend>Русский · RU</legend>
+            <label><span>Kategorija na ruskom</span><input name="category_ru" defaultValue={vehicle?.category_ru ?? ""} maxLength={100} placeholder="Городской автомобиль" /></label>
+            <label><span>Opis na ruskom</span><textarea name="description_ru" rows={5} defaultValue={vehicle?.description_ru ?? ""} maxLength={4000} /></label>
+          </fieldset>
         </div>
       </section>
 
@@ -129,9 +156,9 @@ export default function VehicleForm({
         <div className="admin-gallery-field">
           <label>
             <span>Ostale fotografije</span>
-            <input name="gallery_images" type="file" accept="image/jpeg,image/png,image/webp" multiple />
+              <input name="gallery_images" type="file" accept="image/jpeg,image/png,image/webp" multiple />
           </label>
-          <p>Možete izabrati više slika odjednom. Do 20 fotografija po čuvanju, ukupno najviše 50 MB pre kompresije.</p>
+          <p>Možete izabrati više slika odjednom. Do 12 fotografija po čuvanju, ukupno najviše 18 MB pre kompresije.</p>
           {gallery.length > 0 && (
             <div className="admin-gallery-existing">
               <div className="admin-gallery-existing__header">

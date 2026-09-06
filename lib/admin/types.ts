@@ -38,6 +38,12 @@ export type Vehicle = {
   year: number | null;
   category: string;
   description: string | null;
+  category_en: string | null;
+  description_en: string | null;
+  category_de: string | null;
+  description_de: string | null;
+  category_ru: string | null;
+  description_ru: string | null;
   engine: string;
   fuel_type: "petrol" | "diesel" | "hybrid" | "electric" | "lpg";
   transmission: "manual" | "automatic";

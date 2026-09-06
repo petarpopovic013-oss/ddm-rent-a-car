@@ -1,6 +1,7 @@
 import "server-only";
 
 import { getSupabaseAdmin, VEHICLE_IMAGE_BUCKET } from "@/lib/supabase/admin";
+import { requireAdmin } from "@/lib/admin/session";
 import type { PricingTier, Reservation, Vehicle } from "@/lib/admin/types";
 
 export type VehicleAvailabilityPeriod = {
@@ -32,6 +33,7 @@ export function vehicleImageUrl(path: string | null | undefined) {
 }
 
 export async function getVehicles() {
+  await requireAdmin();
   const response = await getSupabaseAdmin()
     .from("rc_vehicles")
     .select("*, rc_vehicle_pricing_tiers(*), rc_vehicle_images(*)")
@@ -114,6 +116,7 @@ export async function getPublicVehicleBySlug(slug: string) {
 }
 
 export async function getVehicle(id: string) {
+  await requireAdmin();
   const response = await getSupabaseAdmin()
     .from("rc_vehicles")
     .select("*, rc_vehicle_pricing_tiers(*), rc_vehicle_images(*)")
@@ -123,6 +126,7 @@ export async function getVehicle(id: string) {
 }
 
 export async function getReservations(filters?: { status?: string; query?: string }) {
+  await requireAdmin();
   let request = getSupabaseAdmin()
     .from("rc_reservations")
     .select("*, rc_vehicles(id, make, model, slug)")
@@ -144,6 +148,7 @@ export async function getReservations(filters?: { status?: string; query?: strin
 }
 
 export async function getReservation(id: string) {
+  await requireAdmin();
   const response = await getSupabaseAdmin()
     .from("rc_reservations")
     .select("*, rc_vehicles(id, make, model, slug)")
@@ -185,6 +190,7 @@ export async function getPricingForPeriod(vehicleId: string, pickupDate: string,
 }
 
 export async function getDashboardData() {
+  await requireAdmin();
   const supabase = getSupabaseAdmin();
   const today = new Date().toISOString().slice(0, 10);
   const [vehicles, active, pending, acceptedUpcoming, acceptedRows, recent] = await Promise.all([

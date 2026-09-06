@@ -4,8 +4,10 @@ import { getVehicles, vehicleImageUrl } from "@/lib/admin/data";
 import { formatRsd } from "@/lib/admin/format";
 import { fuelLabels } from "@/lib/admin/types";
 import { MessageBanner, PageHeader, VehicleStatusBadge } from "../../components/ui";
+import { requireAdmin } from "@/lib/admin/session";
 
 export default async function VehiclesPage({ searchParams }: { searchParams: Promise<{ success?: string; error?: string }> }) {
+  await requireAdmin();
   const [vehicles, messages] = await Promise.all([getVehicles(), searchParams]);
   return (
     <main className="admin-main">

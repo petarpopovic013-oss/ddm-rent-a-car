@@ -1,13 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { Dictionary } from "@/lib/i18n/translations";
 
 export default function FloatingInquiryButton({
   waitForHero = false,
   vehicleSlug,
+  dictionary,
 }: {
   waitForHero?: boolean;
   vehicleSlug?: string;
+  dictionary: Dictionary;
 }) {
   const [visible, setVisible] = useState(!waitForHero);
 
@@ -36,7 +39,7 @@ export default function FloatingInquiryButton({
         data-vehicle-slug={vehicleSlug}
         tabIndex={visible ? 0 : -1}
       >
-        Pošalji upit <span aria-hidden="true">↗</span>
+        {dictionary["action.inquiry"]} <span aria-hidden="true">↗</span>
       </button>
     </div>
   );

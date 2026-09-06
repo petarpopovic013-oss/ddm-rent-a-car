@@ -8,12 +8,19 @@ import { redirect } from "next/navigation";
 import { createAdminSession, deleteAdminSession, requireAdmin } from "@/lib/admin/session";
 import { ensureVehicleAvailable, getPricingForPeriod, getReservation, getVehicle } from "@/lib/admin/data";
 import { getSupabaseAdmin, VEHICLE_IMAGE_BUCKET } from "@/lib/supabase/admin";
+import { consumeRateLimit } from "@/lib/security/rate-limit";
+
+const loginSchema = z.object({
+  password: z.string().min(1).max(256),
+});
 
 const optionalInteger = (min: number, max: number) =>
   z.preprocess(
     (value) => (value === "" || value == null ? null : Number(value)),
     z.number().int().min(min).max(max).nullable(),
   );
+
+const optionalTranslation = (max: number) => z.string().trim().max(max).nullable();
 
 const vehicleSchema = z.object({
   type: z.enum(["car", "motorcycle"]),
@@ -22,6 +29,12 @@ const vehicleSchema = z.object({
   year: optionalInteger(1990, 2100),
   category: z.string().trim().min(1).max(100),
   description: z.string().trim().max(4000).nullable(),
+  category_en: optionalTranslation(100),
+  description_en: optionalTranslation(4000),
+  category_de: optionalTranslation(100),
+  description_de: optionalTranslation(4000),
+  category_ru: optionalTranslation(100),
+  description_ru: optionalTranslation(4000),
   engine: z.string().trim().min(1).max(60),
   fuel_type: z.enum(["petrol", "diesel", "hybrid", "electric", "lpg"]),
   transmission: z.enum(["manual", "automatic"]),
@@ -59,6 +72,25 @@ const vehicleSchema = z.object({
   }
 }, {
   message: "Popunite sva obavezna polja za izabrani tip vozila.",
+}).superRefine((data, context) => {
+  if (data.status !== "active") return;
+  const requiredTranslations = [
+    ["description", data.description],
+    ["category_en", data.category_en],
+    ["description_en", data.description_en],
+    ["category_de", data.category_de],
+    ["description_de", data.description_de],
+    ["category_ru", data.category_ru],
+    ["description_ru", data.description_ru],
+  ] as const;
+  for (const [path, translation] of requiredTranslations) {
+    if (translation) continue;
+    context.addIssue({
+      code: "custom",
+      path: [path],
+      message: "Aktivno vozilo mora imati opis i prevode na engleski, nemački i ruski.",
+    });
+  }
 });
 
 const reservationSchema = z.object({
@@ -94,13 +126,44 @@ function errorText(error: unknown) {
     if (error.message.includes("exclusion") || error.message.includes("conflict")) {
       return "Vozilo već ima prihvaćenu rezervaciju u izabranom terminu.";
     }
-    return error.message;
+    const expectedPrefixes = [
+      "Vozilo",
+      "Glavna fotografija",
+      "Možete dodati",
+      "Sve izabrane slike",
+      "Slika mora",
+      "Pojedinačna slika",
+      "Jedna od izabranih slika",
+      "Uploadovana datoteka",
+      "Slika nije pravilno",
+      "Izaberite vozilo",
+      "Pre prihvatanja",
+      "Period najma",
+      "Popunite sva",
+      "Aktivno vozilo",
+    ];
+    if (expectedPrefixes.some((prefix) => error.message.startsWith(prefix))) {
+      return error.message;
+    }
+    console.error("Admin action failed", { name: error.name, message: error.message });
   }
-  return "Došlo je do neočekivane greške.";
+  return "Operacija trenutno nije uspela. Pokušajte ponovo.";
 }
 
 function destination(path: string, type: "success" | "error", message: string) {
   return `${path}?${type}=${encodeURIComponent(message)}`;
+}
+
+function revalidateLocalizedPublicPaths(...slugs: string[]) {
+  for (const prefix of ["", "/en", "/de", "/ru"]) {
+    revalidatePath(prefix || "/");
+    revalidatePath(`${prefix}/vozila`);
+    if (slugs.length) {
+      for (const slug of slugs) revalidatePath(`${prefix}/vozila/${slug}`);
+    } else {
+      revalidatePath(`${prefix}/vozila/[slug]`, "page");
+    }
+  }
 }
 
 function parseVehicle(formData: FormData) {
@@ -112,10 +175,16 @@ function parseVehicle(formData: FormData) {
     year: value(formData, "year"),
     category: value(formData, "category"),
     description: nullableValue(formData, "description"),
+    category_en: nullableValue(formData, "category_en"),
+    description_en: nullableValue(formData, "description_en"),
+    category_de: nullableValue(formData, "category_de"),
+    description_de: nullableValue(formData, "description_de"),
+    category_ru: nullableValue(formData, "category_ru"),
+    description_ru: nullableValue(formData, "description_ru"),
     engine: value(formData, "engine"),
     fuel_type: value(formData, "fuel_type"),
     transmission: value(formData, "transmission"),
-    body_type: nullableValue(formData, "body_type") as any,
+    body_type: nullableValue(formData, "body_type"),
     seats: value(formData, "seats"),
     doors: value(formData, "doors"),
     air_conditioning: type === "car" ? formData.get("air_conditioning") === "on" : null,
@@ -179,9 +248,9 @@ function parseReservation(formData: FormData) {
   });
 }
 
-const MAX_IMAGE_BYTES = 12 * 1024 * 1024;
-const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
-const MAX_GALLERY_FILES = 20;
+const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+const MAX_UPLOAD_BYTES = 18 * 1024 * 1024;
+const MAX_GALLERY_FILES = 12;
 
 function files(formData: FormData, key: string) {
   return formData
@@ -195,14 +264,14 @@ function validateImageBatch(images: File[], galleryCount: number) {
   }
   const totalSize = images.reduce((total, image) => total + image.size, 0);
   if (totalSize > MAX_UPLOAD_BYTES) {
-    throw new Error("Sve izabrane slike zajedno ne smeju biti veće od 50 MB.");
+    throw new Error("Sve izabrane slike zajedno ne smeju biti veće od 18 MB.");
   }
 }
 
 async function uploadVehicleImage(vehicleId: string, file: File) {
   const allowed = ["image/jpeg", "image/png", "image/webp"];
   if (!allowed.includes(file.type)) throw new Error("Slika mora biti JPEG, PNG ili WebP.");
-  if (file.size > MAX_IMAGE_BYTES) throw new Error("Pojedinačna slika ne sme biti veća od 12 MB.");
+  if (file.size > MAX_IMAGE_BYTES) throw new Error("Pojedinačna slika ne sme biti veća od 8 MB.");
 
   let optimized: Buffer;
   try {
@@ -268,6 +337,12 @@ function vehicleRecord(
     year: data.year,
     category: data.category,
     description: data.description,
+    category_en: data.category_en,
+    description_en: data.description_en,
+    category_de: data.category_de,
+    description_de: data.description_de,
+    category_ru: data.category_ru,
+    description_ru: data.description_ru,
     engine: data.engine,
     fuel_type: data.fuel_type,
     transmission: data.transmission,
@@ -299,17 +374,34 @@ function pricingRecords(vehicleId: string, data: z.infer<typeof vehicleSchema>) 
 }
 
 export async function loginAction(formData: FormData) {
-  const password = value(formData, "password");
-  const hash = process.env.ADMIN_PASSWORD_HASH;
   let next = "/admin/login";
 
   try {
-    if (!hash) throw new Error("ADMIN_PASSWORD_HASH nije podešen.");
-    if (!(await compare(password, hash))) throw new Error("Pogrešna administratorska šifra.");
+    const allowed = await consumeRateLimit({
+      scope: "admin-login",
+      limit: 5,
+      windowSeconds: 15 * 60,
+    });
+    if (!allowed) throw new Error("Previše pokušaja prijave. Sačekajte 15 minuta.");
+
+    const { password } = loginSchema.parse({ password: value(formData, "password") });
+    const hash = process.env.ADMIN_PASSWORD_HASH;
+    if (!hash || !(await compare(password, hash))) {
+      throw new Error("Prijava nije uspela. Proverite šifru.");
+    }
     await createAdminSession();
     next = "/admin";
   } catch (error) {
-    next = destination("/admin/login", "error", errorText(error));
+    const message = error instanceof Error && (
+      error.message.startsWith("Previše pokušaja")
+      || error.message.startsWith("Prijava nije uspela")
+    )
+      ? error.message
+      : "Prijava trenutno nije dostupna. Pokušajte ponovo.";
+    if (!(error instanceof Error) || !error.message.startsWith("Prijava nije uspela")) {
+      console.error("Admin login failed", error instanceof Error ? error.message : error);
+    }
+    next = destination("/admin/login", "error", message);
   }
 
   redirect(next);
@@ -368,6 +460,7 @@ export async function createVehicleAction(formData: FormData) {
     revalidatePath("/admin/vozila");
     revalidatePath("/");
     revalidatePath("/vozila");
+    revalidateLocalizedPublicPaths(slug);
     next = destination(`/admin/vozila/${id}`, "success", "Vozilo je uspešno dodato.");
   } catch (error) {
     if (uploadedPaths.length) {
@@ -453,6 +546,7 @@ export async function updateVehicleAction(id: string, formData: FormData) {
     revalidatePath("/vozila");
     revalidatePath(`/vozila/${current.slug}`);
     revalidatePath(`/vozila/${slug}`);
+    revalidateLocalizedPublicPaths(current.slug, slug);
     next = destination(next, "success", "Izmene su sačuvane.");
   } catch (error) {
     if (newGalleryPaths.length) {
@@ -489,6 +583,7 @@ export async function deleteVehicleAction(id: string) {
     revalidatePath("/");
     revalidatePath("/vozila");
     revalidatePath(`/vozila/${current.slug}`);
+    revalidateLocalizedPublicPaths(current.slug);
     next = destination(next, "success", "Vozilo je obrisano.");
   } catch (error) {
     next = destination(next, "error", errorText(error));
@@ -541,6 +636,7 @@ export async function createReservationAction(formData: FormData) {
     revalidatePath("/");
     revalidatePath("/vozila");
     revalidatePath("/vozila/[slug]", "page");
+    revalidateLocalizedPublicPaths();
     next = destination("/admin/rezervacije", "success", "Rezervacija je kreirana.");
   } catch (error) {
     next = destination(next, "error", errorText(error));
@@ -576,6 +672,7 @@ export async function updateReservationAction(id: string, formData: FormData) {
     revalidatePath("/");
     revalidatePath("/vozila");
     revalidatePath("/vozila/[slug]", "page");
+    revalidateLocalizedPublicPaths();
     const message = decision === "accepted"
       ? "Upit je prihvaćen i rezervacija je potvrđena."
       : decision === "rejected"
@@ -599,6 +696,7 @@ export async function deleteReservationAction(id: string) {
     revalidatePath("/");
     revalidatePath("/vozila");
     revalidatePath("/vozila/[slug]", "page");
+    revalidateLocalizedPublicPaths();
     next = destination(next, "success", "Rezervacija je obrisana.");
   } catch (error) {
     next = destination(next, "error", errorText(error));

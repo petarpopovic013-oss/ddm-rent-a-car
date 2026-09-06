@@ -1,15 +1,18 @@
 import Image from "next/image";
 import Link from "next/link";
-import { fuelLabels } from "@/lib/admin/types";
 import { getAcceptedReservationPeriods, getFeaturedPublicVehicles, getPublicVehicles, unavailablePeriodsForVehicle, vehicleImageUrl } from "@/lib/admin/data";
 import type { Vehicle as DatabaseVehicle } from "@/lib/admin/types";
-import FAQ from "./components/faq";
-import FloatingInquiryButton from "./components/floating-inquiry-button";
-import InquiryModal, { type InquiryVehicle } from "./components/inquiry-modal";
-import SiteHeader from "./components/site-header";
+import type { Locale } from "@/lib/i18n/config";
+import { localeConfig, localizedPath } from "@/lib/i18n/config";
+import { getDictionary, type Dictionary } from "@/lib/i18n/translations";
+import { localizedFuel, localizedTransmission } from "@/lib/i18n/vehicle";
+import FAQ from "@/app/components/faq";
+import FloatingInquiryButton from "@/app/components/floating-inquiry-button";
+import InquiryModal, { type InquiryVehicle } from "@/app/components/inquiry-modal";
+import SiteFooter from "@/app/components/site-footer";
+import SiteHeader from "@/app/components/site-header";
 
 const phoneDisplay = "+381 64 133 4589";
-const phoneHref = "tel:+381641334589";
 const email = "ddmcompany@gmail.com";
 const mapsUrl =
   "https://www.google.com/maps/search/?api=1&query=Dr+Svetislava+Kasapinovi%C4%87a+9%2C+Novi+Sad";
@@ -27,7 +30,7 @@ type LandingVehicle = {
   facts: string[];
 };
 
-function toLandingVehicle(vehicle: DatabaseVehicle): LandingVehicle | null {
+function toLandingVehicle(vehicle: DatabaseVehicle, dictionary: Dictionary): LandingVehicle | null {
   const dailyPrices = (vehicle.rc_vehicle_pricing_tiers ?? [])
     .filter((tier) => tier.pricing_mode === "daily")
     .map((tier) => tier.price_rsd);
@@ -44,83 +47,17 @@ function toLandingVehicle(vehicle: DatabaseVehicle): LandingVehicle | null {
     imagePosition: vehicle.image_position ?? undefined,
     facts: vehicle.type === "motorcycle"
       ? [
-          `${vehicle.engine} ${fuelLabels[vehicle.fuel_type].toLocaleLowerCase("sr-Latn")}`,
+          `${vehicle.engine} ${localizedFuel(vehicle, dictionary).toLocaleLowerCase()}`,
           `${vehicle.power_kw} kW`,
-          `Kategorija ${vehicle.license_category}`,
+          `${dictionary["vehicle.license"]} ${vehicle.license_category}`,
         ]
       : [
-          `${vehicle.engine} ${fuelLabels[vehicle.fuel_type].toLocaleLowerCase("sr-Latn")}`,
-          vehicle.transmission === "manual" ? "Manuelni" : "Automatski",
-          `${vehicle.seats} sedišta`,
+          `${vehicle.engine} ${localizedFuel(vehicle, dictionary).toLocaleLowerCase()}`,
+          localizedTransmission(vehicle, dictionary),
+          `${vehicle.seats} ${dictionary["vehicle.seats"]}`,
         ],
   };
 }
-
-function displayPrice(price: number) {
-  return new Intl.NumberFormat("sr-RS").format(price);
-}
-
-const benefits = [
-  {
-    number: "01",
-    title: "Neograničena kilometraža",
-    copy: "Kilometraža nije ograničena.",
-  },
-  {
-    number: "02",
-    title: "Kasko osigurana vozila",
-    copy: "Sva vozila su kasko osigurana i redovno servisirana.",
-  },
-  {
-    number: "03",
-    title: "Putovanje u inostranstvo",
-    copy: "Vozilom možete u inostranstvo uz prethodni dogovor.",
-  },
-  {
-    number: "04",
-    title: "DDM servisni tim",
-    copy: "Vozila priprema i održava naš tim u Novom Sadu.",
-  },
-];
-
-const faqItems = [
-  {
-    question: "Ko može da iznajmi vozilo?",
-    answer:
-      "Minimalna starost vozača je 25 godina. Prilikom preuzimanja potrebno je pokazati važeću vozačku dozvolu i identifikacioni dokument.",
-  },
-  {
-    question: "Koliki je depozit?",
-    answer: "Depozit za svako vozilo iznosi 36.000 RSD.",
-  },
-  {
-    question: "Da li je kilometraža ograničena?",
-    answer: "Ne. Najam uključuje neograničenu kilometražu.",
-  },
-  {
-    question: "Mogu li vozilom u inostranstvo?",
-    answer: "Da, uz prethodni dogovor i pripremljenu dokumentaciju.",
-  },
-  {
-    question: "Kakva je politika goriva?",
-    answer:
-      "Vozilo preuzimate sa punim rezervoarom i vraćate ga sa punim rezervoarom. Ako rezervoar nije pun, naplaćuje se 500 RSD za odlazak na pumpu, kao i sipano gorivo.",
-  },
-  {
-    question: "Da li su vozila osigurana?",
-    answer: "Da. Sva vozila su kasko osigurana. Detalje pokrića dobijate pre preuzimanja.",
-  },
-  {
-    question: "Kako saznajem cenu i slobodan termin?",
-    answer:
-      "Izaberite vozilo i datume u online upitu. Iznos se računa odmah, a DDM tim potvrđuje dostupnost.",
-  },
-  {
-    question: "Koliko košta pranje vozila?",
-    answer:
-      "Pranje se naplaćuje 1.200 RSD za sva vozila osim Hyundai H1. Za Hyundai H1 pranje iznosi 1.800 RSD.",
-  },
-];
 
 function ArrowIcon() {
   return <span aria-hidden="true">↗</span>;
@@ -146,10 +83,12 @@ function SectionIntro({
   );
 }
 
-function VehicleCard({ vehicle }: { vehicle: LandingVehicle }) {
+function VehicleCard({ vehicle, locale, dictionary }: { vehicle: LandingVehicle; locale: Locale; dictionary: Dictionary }) {
+  const href = localizedPath(locale, `/vozila/${vehicle.slug}`);
+  const displayPrice = new Intl.NumberFormat(localeConfig[locale].intlLocale).format(vehicle.dailyPrice);
   return (
     <article className="vehicle-card" id={vehicle.slug}>
-      <Link className="vehicle-card__image" href={`/vozila/${vehicle.slug}`} aria-label={`Pogledaj ${vehicle.make} ${vehicle.model}`}>
+      <Link className="vehicle-card__image" href={href} aria-label={`${dictionary["action.viewVehicle"]}: ${vehicle.make} ${vehicle.model}`}>
         {vehicle.image ? (
           <>
             <Image
@@ -163,14 +102,14 @@ function VehicleCard({ vehicle }: { vehicle: LandingVehicle }) {
             <Image
               className="vehicle-cover__image"
               src={vehicle.image}
-              alt={`${vehicle.make} ${vehicle.model} iz DDM Rent a Car ponude`}
+              alt={`${vehicle.make} ${vehicle.model} — DDM Rent a Car`}
               fill
               sizes="(max-width: 767px) 100vw, (max-width: 1199px) 50vw, 33vw"
               style={{ objectPosition: vehicle.imagePosition ?? "center" }}
             />
           </>
         ) : (
-          <span className="vehicle-card__image-placeholder">DDM / fotografija vozila</span>
+          <span className="vehicle-card__image-placeholder">{dictionary["common.vehiclePhoto"]}</span>
         )}
       </Link>
       <div className="vehicle-card__body">
@@ -180,19 +119,19 @@ function VehicleCard({ vehicle }: { vehicle: LandingVehicle }) {
             <h3>{vehicle.model}</h3>
           </div>
           <div className="vehicle-card__price">
-            <small>od</small>
-            <strong>{displayPrice(vehicle.dailyPrice)} RSD</strong>
-            <span>/ dan</span>
+            <small>{dictionary["common.from"]}</small>
+            <strong>{displayPrice} RSD</strong>
+            <span>{dictionary["common.perDay"]}</span>
           </div>
         </div>
-        <ul className="vehicle-card__facts" aria-label="Karakteristike vozila">
+        <ul className="vehicle-card__facts" aria-label={dictionary["vehicle.features"]}>
           {vehicle.facts.map((fact) => (
             <li key={fact}>{fact}</li>
           ))}
         </ul>
         <div className="vehicle-card__actions">
-          <Link className="button button--small" href={`/vozila/${vehicle.slug}`}>
-            Pogledaj vozilo <ArrowIcon />
+          <Link className="button button--small" href={href}>
+            {dictionary["action.viewVehicle"]} <ArrowIcon />
           </Link>
           <button
             className="vehicle-card__inquiry"
@@ -200,7 +139,7 @@ function VehicleCard({ vehicle }: { vehicle: LandingVehicle }) {
             data-inquiry-trigger
             data-vehicle-slug={vehicle.slug}
           >
-            Pošalji upit
+            {dictionary["action.inquiry"]}
           </button>
         </div>
       </div>
@@ -208,7 +147,17 @@ function VehicleCard({ vehicle }: { vehicle: LandingVehicle }) {
   );
 }
 
-export default async function Home() {
+export default async function HomePage({ locale }: { locale: Locale }) {
+  const dictionary = getDictionary(locale);
+  const benefits = [1, 2, 3, 4].map((item) => ({
+    number: String(item).padStart(2, "0"),
+    title: dictionary[`home.benefits.item${item}Title` as keyof Dictionary],
+    copy: dictionary[`home.benefits.item${item}Copy` as keyof Dictionary],
+  }));
+  const faqItems = [1, 2, 3, 4, 5, 6, 7, 8].map((item) => ({
+    question: dictionary[`faq.q${item}` as keyof Dictionary],
+    answer: dictionary[`faq.a${item}` as keyof Dictionary],
+  }));
   let vehicles: LandingVehicle[] = [];
   let inquiryVehicles: InquiryVehicle[] = [];
   try {
@@ -218,7 +167,7 @@ export default async function Home() {
       getAcceptedReservationPeriods(),
     ]);
     vehicles = featuredVehicles
-      .map(toLandingVehicle)
+      .map((vehicle) => toLandingVehicle(vehicle, dictionary))
       .filter((vehicle): vehicle is LandingVehicle => vehicle !== null);
     inquiryVehicles = publicVehicles.map((vehicle) => ({
       slug: vehicle.slug,
@@ -242,8 +191,9 @@ export default async function Home() {
     "@context": "https://schema.org",
     "@type": ["LocalBusiness", "AutoRental"],
     name: "DDM Rent a Car",
+    inLanguage: localeConfig[locale].htmlLang,
     image: "https://rentacarddm.rs/Logo/DDM-RC.png",
-    url: "https://rentacarddm.rs",
+    url: new URL(localizedPath(locale), "https://rentacarddm.rs").toString(),
     telephone: "+381641334589",
     email,
     address: {
@@ -279,38 +229,36 @@ export default async function Home() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
-      <SiteHeader />
+      <SiteHeader locale={locale} dictionary={dictionary} />
       <main>
         <section className="hero" id="pocetna">
           <div className="hero__grid" aria-hidden="true" />
           <div className="page-shell hero__stage">
             <div className="hero__content">
-              <p className="hero__kicker"><span>DDM Rent a Car</span> Novi Sad</p>
+              <p className="hero__kicker"><span>DDM Rent a Car</span> {dictionary["home.hero.kicker"]}</p>
               <h1>
-                <span>Spremni za <i>grad.</i></span>
-                <span className="hero__headline-dark">Spremni za <i>put.</i></span>
+                <span>{dictionary["home.hero.line1a"]} <i>{dictionary["home.hero.line1b"]}</i></span>
+                <span className="hero__headline-dark">{dictionary["home.hero.line2a"]} <i>{dictionary["home.hero.line2b"]}</i></span>
               </h1>
-              <p className="hero__copy">
-                Uredna vozila, poznate cene i direktan dogovor sa našim timom u Novom Sadu.
-              </p>
+              <p className="hero__copy">{dictionary["home.hero.copy"]}</p>
               <div className="hero__actions">
                 <button className="button" type="button" data-inquiry-trigger>
-                  Pošalji upit <ArrowIcon />
+                  {dictionary["action.inquiry"]} <ArrowIcon />
                 </button>
                 <div className="hero__phone">
-                  <span>Brz online upit</span>
-                  Bez registracije
+                  <span>{dictionary["home.hero.quick"]}</span>
+                  {dictionary["home.hero.noRegistration"]}
                 </div>
               </div>
             </div>
             <div className="hero__vehicle">
               <div className="hero__vehicle-label" aria-hidden="true">
                 <span>Golf 7</span>
-                <small>DDM flota / 01</small>
+                <small>{dictionary["home.hero.fleetLabel"]}</small>
               </div>
               <Image
                 src="/golf7hero.png"
-                alt="Beli Volkswagen Golf 7 iz DDM Rent a Car ponude"
+                alt="Volkswagen Golf 7 — DDM Rent a Car"
                 width={1200}
                 height={732}
                 priority
@@ -319,21 +267,21 @@ export default async function Home() {
               <span className="hero__ground" aria-hidden="true" />
             </div>
           </div>
-          <div className="hero__information" aria-label="Brzi kontakt">
+          <div className="hero__information" aria-label={dictionary["home.info.label"]}>
             <div className="page-shell hero__information-inner">
             <div>
-              <span>Lokacija</span>
+              <span>{dictionary["home.info.location"]}</span>
               <strong>Dr Svetislava Kasapinovića 9, Novi Sad</strong>
             </div>
             <div>
-              <span>Radno vreme</span>
-              <strong>Radnim danima 08-16h<br />Subotom 08-14h</strong>
+              <span>{dictionary["home.info.hours"]}</span>
+              <strong>{dictionary["home.info.weekdays"]}<br />{dictionary["home.info.saturday"]}</strong>
             </div>
             <div>
-              <span>Upiti i informacije</span>
+              <span>{dictionary["home.info.inquiries"]}</span>
               <strong>{phoneDisplay}</strong>
             </div>
-              <button type="button" data-inquiry-trigger>Pošalji upit <ArrowIcon /></button>
+              <button type="button" data-inquiry-trigger>{dictionary["action.inquiry"]} <ArrowIcon /></button>
             </div>
           </div>
         </section>
@@ -342,27 +290,27 @@ export default async function Home() {
           <div className="page-shell">
             <div className="fleet-heading">
               <SectionIntro
-                eyebrow="Aktuelna ponuda"
-                title="Izaberite vozilo."
-                copy="U ponudi su gradski automobili, limuzine, karavani i putnički kombi. Izaberite vozilo i unesite željeni termin."
+                eyebrow={dictionary["home.fleet.eyebrow"]}
+                title={dictionary["home.fleet.title"]}
+                copy={dictionary["home.fleet.copy"]}
               />
-              <p className="fleet-note">Cena zavisi od vozila i broja dana. Dostupnost potvrđujemo nakon slanja upita.</p>
+              <p className="fleet-note">{dictionary["home.fleet.note"]}</p>
             </div>
             <div className="vehicle-grid">
               {vehicles.length ? (
-                vehicles.map((vehicle) => <VehicleCard key={vehicle.slug} vehicle={vehicle} />)
+                vehicles.map((vehicle) => <VehicleCard key={vehicle.slug} vehicle={vehicle} locale={locale} dictionary={dictionary} />)
               ) : (
                 <div className="fleet-empty">
-                  <strong>Ponuda se trenutno osvežava.</strong>
-                  <span>Pošaljite upit i DDM tim će vam preporučiti dostupno vozilo.</span>
+                  <strong>{dictionary["home.fleet.emptyTitle"]}</strong>
+                  <span>{dictionary["home.fleet.emptyCopy"]}</span>
                 </div>
               )}
             </div>
             <div className="fleet-cta">
-              <p>Ovde je prikazan deo flote.</p>
+              <p>{dictionary["home.fleet.partial"]}</p>
               <div className="fleet-cta__actions">
-                <Link className="button button--small" href="/vozila">Pogledaj celu flotu <ArrowIcon /></Link>
-                <button className="text-link" type="button" data-inquiry-trigger>Pošaljite upit za drugo vozilo <ArrowIcon /></button>
+                <Link className="button button--small" href={localizedPath(locale, "/vozila")}>{dictionary["action.viewFleet"]} <ArrowIcon /></Link>
+                <button className="text-link" type="button" data-inquiry-trigger>{dictionary["home.fleet.other"]} <ArrowIcon /></button>
               </div>
             </div>
           </div>
@@ -371,25 +319,25 @@ export default async function Home() {
         <section className="section section--process" id="kako-funkcionise" data-index="02">
           <div className="page-shell">
             <SectionIntro
-              eyebrow="Jednostavan najam"
-              title="Od izbora do ključeva u tri koraka."
-              copy="Izaberite vozilo, unesite datume i ostavite kontakt. Odgovaramo nakon provere termina."
+              eyebrow={dictionary["home.process.eyebrow"]}
+              title={dictionary["home.process.title"]}
+              copy={dictionary["home.process.copy"]}
             />
             <ol className="process-grid">
               <li>
                 <span>01</span>
-                <h3>Izaberite vozilo</h3>
-                <p>Pregledajte flotu i izaberite auto koji vam odgovara.</p>
+                <h3>{dictionary["home.process.step1Title"]}</h3>
+                <p>{dictionary["home.process.step1Copy"]}</p>
               </li>
               <li>
                 <span>02</span>
-                <h3>Javite nam datume</h3>
-                <p>Unesite datum preuzimanja i vraćanja.</p>
+                <h3>{dictionary["home.process.step2Title"]}</h3>
+                <p>{dictionary["home.process.step2Copy"]}</p>
               </li>
               <li>
                 <span>03</span>
-                <h3>Preuzmite i krenite</h3>
-                <p>Nakon potvrde termina dogovaramo preuzimanje u Novom Sadu.</p>
+                <h3>{dictionary["home.process.step3Title"]}</h3>
+                <p>{dictionary["home.process.step3Copy"]}</p>
               </li>
             </ol>
           </div>
@@ -399,9 +347,9 @@ export default async function Home() {
           <div className="page-shell benefits-layout">
             <div className="benefits-copy">
               <SectionIntro
-                eyebrow="Zašto DDM"
-                title="Vozila održavamo mi."
-                copy="DDM se svakodnevno bavi servisom i održavanjem automobila. Ista ekipa priprema i rent-a-car vozila."
+                eyebrow={dictionary["home.benefits.eyebrow"]}
+                title={dictionary["home.benefits.title"]}
+                copy={dictionary["home.benefits.copy"]}
               />
               <div className="benefit-list">
                 {benefits.map((benefit) => (
@@ -415,12 +363,12 @@ export default async function Home() {
                 ))}
               </div>
             </div>
-            <div className="benefits-collage" aria-label="DDM usluga i vozila">
+            <div className="benefits-collage" aria-label={dictionary["home.benefits.galleryLabel"]}>
               <div className="benefits-collage__main">
-                <Image src="/team1.jpg" alt="Ulaz u DDM Company servis u Novom Sadu" fill sizes="(max-width: 900px) 90vw, 31vw" />
+                <Image src="/team1.jpg" alt={dictionary["home.benefits.mainAlt"]} fill sizes="(max-width: 900px) 90vw, 31vw" />
               </div>
               <div className="benefits-collage__small">
-                <Image src="/team.jpeg" alt="Radionica DDM Company automobilskog tima" fill sizes="(max-width: 900px) 90vw, 18vw" />
+                <Image src="/team.jpeg" alt={dictionary["home.benefits.smallAlt"]} fill sizes="(max-width: 900px) 90vw, 18vw" />
               </div>
             </div>
           </div>
@@ -431,22 +379,17 @@ export default async function Home() {
             <div className="about-image">
               <Image
                 src="/slikaprostor1.JPG"
-                alt="DDM Company poslovni prostor i servis Novi Sad"
+                alt={dictionary["home.about.alt"]}
                 fill
                 sizes="(max-width: 900px) 92vw, 46vw"
               />
             </div>
             <div className="about-copy">
-              <p className="eyebrow">O nama</p>
-              <h2>DDM Company, Novi Sad.</h2>
-              <p className="section-copy">
-                DDM Company se bavi servisom, održavanjem, prodajom i iznajmljivanjem automobila u
-                Novom Sadu. Vozila za najam priprema naš servisni tim.
-              </p>
-              <p className="section-copy">
-                Ako imate pitanje pre ili tokom najma, razgovarate direktno sa nama.
-              </p>
-              <button className="button" type="button" data-inquiry-trigger>Pošalji upit <ArrowIcon /></button>
+              <p className="eyebrow">{dictionary["home.about.eyebrow"]}</p>
+              <h2>{dictionary["home.about.title"]}</h2>
+              <p className="section-copy">{dictionary["home.about.copy1"]}</p>
+              <p className="section-copy">{dictionary["home.about.copy2"]}</p>
+              <button className="button" type="button" data-inquiry-trigger>{dictionary["action.inquiry"]} <ArrowIcon /></button>
             </div>
           </div>
         </section>
@@ -455,25 +398,22 @@ export default async function Home() {
           <div className="page-shell review-layout">
             <div className="review-image">
               {reviewVehicle?.image ? (
-                <Image src={reviewVehicle.image} alt={`${reviewVehicle.make} ${reviewVehicle.model} iz DDM Rent a Car flote`} fill sizes="(max-width: 900px) 92vw, 40vw" style={{ objectPosition: reviewVehicle.imagePosition ?? "center" }} />
+                <Image src={reviewVehicle.image} alt={`${reviewVehicle.make} ${reviewVehicle.model} ${dictionary["home.review.imageAlt"]}`} fill sizes="(max-width: 900px) 92vw, 40vw" style={{ objectPosition: reviewVehicle.imagePosition ?? "center" }} />
               ) : (
-                <span className="media-placeholder">DDM flota</span>
+                <span className="media-placeholder">{dictionary["common.fleet"]}</span>
               )}
             </div>
             <figure>
-              <p className="eyebrow">Iskustvo klijenata</p>
-              <h2 id="review-title">Šta kažu klijenti.</h2>
-              <div className="review-stars" aria-label="Pet zvezdica">★★★★★</div>
-              <blockquote>
-                „Koristio sam DDM rent-a-car pre kupovine sopstvenog automobila. Sva vozila bila su
-                u dobrom stanju, a cene pristupačne.“
-              </blockquote>
+              <p className="eyebrow">{dictionary["home.review.eyebrow"]}</p>
+              <h2 id="review-title">{dictionary["home.review.title"]}</h2>
+              <div className="review-stars" aria-label={dictionary["home.review.stars"]}>★★★★★</div>
+              <blockquote>{dictionary["home.review.quote"]}</blockquote>
               <figcaption>
                 <strong>Aleksandr</strong>
-                <span>Google recenzija · prevedeno sa ruskog</span>
+                <span>{dictionary["home.review.source"]}</span>
               </figcaption>
               <a className="text-link" href={reviewsUrl} target="_blank" rel="noreferrer">
-                Pogledajte recenzije na Google-u <ArrowIcon />
+                {dictionary["home.review.link"]} <ArrowIcon />
               </a>
             </figure>
           </div>
@@ -484,10 +424,10 @@ export default async function Home() {
           <div className="faq-layout">
             <div className="faq-intro-shell">
               <div className="faq-intro">
-                <p className="eyebrow">Pre nego što krenete</p>
-                <h2>Najčešća pitanja.</h2>
-                <p className="section-copy">Ovde su osnovni uslovi najma. Za konkretno vozilo i termin pošaljite upit.</p>
-                <button className="text-link" type="button" data-inquiry-trigger>Imate drugo pitanje? Pošaljite upit <ArrowIcon /></button>
+                <p className="eyebrow">{dictionary["home.faq.eyebrow"]}</p>
+                <h2>{dictionary["home.faq.title"]}</h2>
+                <p className="section-copy">{dictionary["home.faq.copy"]}</p>
+                <button className="text-link" type="button" data-inquiry-trigger>{dictionary["home.faq.other"]} <ArrowIcon /></button>
               </div>
             </div>
             <FAQ items={faqItems} />
@@ -502,32 +442,32 @@ export default async function Home() {
           >
             <div className="contact-card__backdrop" aria-hidden="true" />
             <div className="contact-card__intro">
-              <p className="eyebrow eyebrow--light">Kontakt i lokacija</p>
-              <h2>Proverite vozilo i termin.</h2>
-              <p>Izaberite vozilo, unesite datume i ostavite kontakt. Javićemo vam da li je termin slobodan.</p>
+              <p className="eyebrow eyebrow--light">{dictionary["home.contact.eyebrow"]}</p>
+              <h2>{dictionary["home.contact.title"]}</h2>
+              <p>{dictionary["home.contact.copy"]}</p>
               <div className="contact-card__actions">
-                <button className="button button--white" type="button" data-inquiry-trigger>Pošalji upit <ArrowIcon /></button>
+                <button className="button button--white" type="button" data-inquiry-trigger>{dictionary["action.inquiry"]} <ArrowIcon /></button>
               </div>
             </div>
             <div className="contact-details">
               <article>
-                <span>01 · Adresa</span>
+                <span>01 · {dictionary["home.contact.address"]}</span>
                 <h3>Dr Svetislava Kasapinovića 9</h3>
-                <p>21000 Novi Sad, Srbija</p>
-                <a href={mapsUrl} target="_blank" rel="noreferrer">Otvori u Google mapama <ArrowIcon /></a>
+                <p>{dictionary["home.contact.country"]}</p>
+                <a href={mapsUrl} target="_blank" rel="noreferrer">{dictionary["home.contact.maps"]} <ArrowIcon /></a>
               </article>
               <article>
-                <span>02 · Radno vreme</span>
-                <h3>Radnim danima: 08-16h</h3>
-                <p>Subotom: 08-14h · Nedeljom ne radimo</p>
+                <span>02 · {dictionary["home.contact.hours"]}</span>
+                <h3>{dictionary["home.contact.weekdays"]}</h3>
+                <p>{dictionary["home.contact.weekend"]}</p>
               </article>
               <article>
-                <span>03 · Dodatni telefoni</span>
+                <span>03 · {dictionary["home.contact.phones"]}</span>
                 <a className="contact-details__phone" href="tel:+381212700017">+381 21 270 0017</a>
                 <a className="contact-details__phone" href="tel:+381603001633">+381 60 300 1633</a>
               </article>
               <article>
-                <span>04 · Pratite DDM</span>
+                <span>04 · {dictionary["home.contact.follow"]}</span>
                 <div className="social-links">
                   <a href="https://www.instagram.com/rentacarddm/" target="_blank" rel="noreferrer">Instagram <ArrowIcon /></a>
                   <a href="https://www.facebook.com/ddmcompany/?locale=sr_RS" target="_blank" rel="noreferrer">Facebook <ArrowIcon /></a>
@@ -538,38 +478,9 @@ export default async function Home() {
         </section>
       </main>
 
-      <footer className="footer">
-        <div className="page-shell footer__top">
-          <div>
-            <div className="footer__logo">
-              <Image src="/Logo/DDM-RC.png" alt="DDM Company" width={946} height={392} sizes="220px" />
-            </div>
-            <p>Iznajmljivanje vozila u Novom Sadu. Za termin i dostupnost pošaljite online upit.</p>
-          </div>
-          <div>
-            <strong>Navigacija</strong>
-            <a href="#vozila">Vozila</a>
-            <a href="#prednosti">Prednosti</a>
-            <a href="#kako-funkcionise">Kako funkcioniše</a>
-            <a href="#faq">Česta pitanja</a>
-          </div>
-          <div>
-            <strong>Kontakt</strong>
-            <a href={phoneHref}>{phoneDisplay}</a>
-            <a href={`mailto:${email}`}>{email}</a>
-            <a href={mapsUrl} target="_blank" rel="noreferrer">Dr Svetislava Kasapinovića 9</a>
-          </div>
-        </div>
-        <div className="footer__bottom">
-          <div className="page-shell">
-            <span>© {new Date().getFullYear()} DDM Company. Sva prava zadržana.</span>
-            <span>Novi Sad, Srbija</span>
-          </div>
-        </div>
-      </footer>
-
-      <FloatingInquiryButton waitForHero />
-      <InquiryModal vehicles={inquiryVehicles} />
+      <SiteFooter locale={locale} dictionary={dictionary} />
+      <FloatingInquiryButton waitForHero dictionary={dictionary} />
+      <InquiryModal vehicles={inquiryVehicles} locale={locale} dictionary={dictionary} />
     </>
   );
 }

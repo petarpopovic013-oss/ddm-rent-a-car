@@ -2,8 +2,10 @@ import Link from "next/link";
 import { getReservations } from "@/lib/admin/data";
 import { formatDate, formatDateTime, formatRsd } from "@/lib/admin/format";
 import { MessageBanner, PageHeader, ReservationStatusBadge } from "../../components/ui";
+import { requireAdmin } from "@/lib/admin/session";
 
 export default async function ReservationsPage({ searchParams }: { searchParams: Promise<{ status?: string; q?: string; success?: string; error?: string }> }) {
+  await requireAdmin();
   const filters = await searchParams;
   const reservations = await getReservations({ status: filters.status, query: filters.q });
   return <main className="admin-main"><PageHeader eyebrow="Upiti / operativa" title="Rezervacije" copy="Pretraga, odluke i kompletan pregled termina i kontakata." actionHref="/admin/rezervacije/nova" actionLabel="Nova rezervacija" /><MessageBanner success={filters.success} error={filters.error} />
