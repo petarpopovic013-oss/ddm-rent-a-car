@@ -15,6 +15,7 @@ const bodyKeys: Record<BodyType, TranslationKey> = {
   sedan: "vehicle.body.sedan",
   wagon: "vehicle.body.wagon",
   suv: "vehicle.body.suv",
+  minivan: "vehicle.body.minivan",
   van: "vehicle.body.van",
   coupe: "vehicle.body.coupe",
   convertible: "vehicle.body.convertible",

@@ -43,6 +43,7 @@ const vehicleSchema = z.object({
     "sedan",
     "wagon",
     "suv",
+    "minivan",
     "van",
     "coupe",
     "convertible",

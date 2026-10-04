@@ -7,6 +7,7 @@ export type BodyType =
   | "sedan"
   | "wagon"
   | "suv"
+  | "minivan"
   | "van"
   | "coupe"
   | "convertible"
@@ -110,6 +111,7 @@ export const bodyTypeLabels: Record<BodyType, string> = {
   sedan: "Limuzina",
   wagon: "Karavan",
   suv: "SUV",
+  minivan: "Minivan",
   van: "Kombi",
   coupe: "Kupe",
   convertible: "Kabriolet",
