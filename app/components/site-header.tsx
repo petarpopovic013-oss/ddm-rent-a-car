@@ -7,6 +7,7 @@ import type { Locale } from "@/lib/i18n/config";
 import { localizedPath } from "@/lib/i18n/config";
 import type { Dictionary } from "@/lib/i18n/translations";
 import LanguageSelector from "./language-selector";
+import RouteScrollManager from "./route-scroll-manager";
 
 export default function SiteHeader({ locale, dictionary }: { locale: Locale; dictionary: Dictionary }) {
   const [open, setOpen] = useState(false);
@@ -14,6 +15,7 @@ export default function SiteHeader({ locale, dictionary }: { locale: Locale; dic
     [dictionary["nav.fleet"], localizedPath(locale, "/vozila")],
     [dictionary["nav.benefits"], localizedPath(locale, "/#prednosti")],
     [dictionary["nav.process"], localizedPath(locale, "/#kako-funkcionise")],
+    [dictionary["nav.terms"], localizedPath(locale, "/#osnovni-uslovi")],
     [dictionary["nav.faq"], localizedPath(locale, "/#faq")],
     [dictionary["nav.contact"], localizedPath(locale, "/#kontakt")],
   ];
@@ -34,6 +36,7 @@ export default function SiteHeader({ locale, dictionary }: { locale: Locale; dic
 
   return (
     <>
+      <RouteScrollManager />
       <header className="header">
         <div className="page-shell header__inner">
           <Link className="header__logo" href={localizedPath(locale)} aria-label={dictionary["header.home"]}>

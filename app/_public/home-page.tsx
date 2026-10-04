@@ -15,7 +15,7 @@ import SiteHeader from "@/app/components/site-header";
 const phoneDisplay = "+381 64 133 4589";
 const email = "ddmcompany@gmail.com";
 const mapsUrl =
-  "https://www.google.com/maps/search/?api=1&query=Dr+Svetislava+Kasapinovi%C4%87a+9%2C+Novi+Sad";
+  "https://www.google.com/maps?cid=7811039994936395223";
 const reviewsUrl =
   "https://www.google.com/search?q=ddm+rent+a+car#lrd=0x475b104b45f5f5c5:0x6c66637da08d85d7,1,,,,";
 
@@ -343,7 +343,31 @@ export default async function HomePage({ locale }: { locale: Locale }) {
           </div>
         </section>
 
-        <section className="section section--benefits" id="prednosti" data-index="03">
+        <section className="section section--terms" id="osnovni-uslovi" data-index="03">
+          <div className="page-shell terms-layout">
+            <div className="terms-intro">
+              <SectionIntro
+                eyebrow={dictionary["home.terms.eyebrow"]}
+                title={dictionary["home.terms.title"]}
+                copy={dictionary["home.terms.copy"]}
+              />
+            </div>
+            <ol className="terms-list">
+              {Array.from({ length: 7 }, (_, index) => {
+                const number = index + 1;
+                return (
+                  <li key={number}>
+                    <span aria-hidden="true">{String(number).padStart(2, "0")}</span>
+                    <p>{dictionary[`home.terms.item${number}` as keyof Dictionary]}</p>
+                  </li>
+                );
+              })}
+            </ol>
+            <p className="terms-note">{dictionary["home.terms.note"]}</p>
+          </div>
+        </section>
+
+        <section className="section section--benefits" id="prednosti" data-index="04">
           <div className="page-shell benefits-layout">
             <div className="benefits-copy">
               <SectionIntro
@@ -374,7 +398,7 @@ export default async function HomePage({ locale }: { locale: Locale }) {
           </div>
         </section>
 
-        <section className="section section--about" data-index="04">
+        <section className="section section--about" data-index="05">
           <div className="page-shell about-layout">
             <div className="about-image">
               <Image
@@ -394,7 +418,7 @@ export default async function HomePage({ locale }: { locale: Locale }) {
           </div>
         </section>
 
-        <section className="section section--review" aria-labelledby="review-title" data-index="05">
+        <section className="section section--review" aria-labelledby="review-title" data-index="06">
           <div className="page-shell review-layout">
             <div className="review-image">
               {reviewVehicle?.image ? (
@@ -419,7 +443,7 @@ export default async function HomePage({ locale }: { locale: Locale }) {
           </div>
         </section>
 
-        <section className="section section--faq" id="faq" data-index="06">
+        <section className="section section--faq" id="faq" data-index="07">
           <div className="page-shell faq-panel">
           <div className="faq-layout">
             <div className="faq-intro-shell">
@@ -435,7 +459,7 @@ export default async function HomePage({ locale }: { locale: Locale }) {
           </div>
         </section>
 
-        <section className="section section--contact" id="kontakt" data-index="07">
+        <section className="section section--contact" id="kontakt" data-index="08">
           <div
             className="page-shell contact-card"
             style={contactVehicle?.image ? { backgroundImage: `url("${contactVehicle.image}")` } : undefined}

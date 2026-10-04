@@ -5,7 +5,7 @@ import { localizedPath } from "@/lib/i18n/config";
 import type { Dictionary } from "@/lib/i18n/translations";
 
 const mapsUrl =
-  "https://www.google.com/maps/search/?api=1&query=Dr+Svetislava+Kasapinovi%C4%87a+9%2C+Novi+Sad";
+  "https://www.google.com/maps?cid=7811039994936395223";
 
 export default function SiteFooter({ locale, dictionary }: { locale: Locale; dictionary: Dictionary }) {
   return (
